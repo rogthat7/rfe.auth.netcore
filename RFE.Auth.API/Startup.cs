@@ -26,6 +26,8 @@ namespace RFE.Auth.API
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+             //Add Swagger relates setting  
+            services.AddSwaggerGen();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -46,6 +48,11 @@ namespace RFE.Auth.API
             {
                 endpoints.MapControllers();
             });
+            app.UseSwagger();    
+            app.UseSwaggerUI(c =>    
+            {    
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Common Auth API");    
+            }); 
         }
     }
 }

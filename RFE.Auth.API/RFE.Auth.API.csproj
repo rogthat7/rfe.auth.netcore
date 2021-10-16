@@ -8,4 +8,8 @@
     <ProjectReference Include="..\RFE.Auth.Core\RFE.Auth.Core.csproj" />
     <ProjectReference Include="..\RFE.Auth.Infrastructure\RFE.Auth.Infrastructure.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.2.2" />
+  </ItemGroup>
 </Project>
