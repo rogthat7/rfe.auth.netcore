@@ -1,6 +1,6 @@
 using System;
 
-namespace RFE.Auth.API
+namespace RFE.Auth.Core.Models
 {
     public class WeatherForecast
     {
