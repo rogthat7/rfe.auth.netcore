@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -12,6 +15,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RFE.Auth.API.Models;
+using RFE.Auth.API.Models.User;
+using RFE.Auth.Core.Interfaces.Services;
+using RFE.Auth.Core.Services;
 
 namespace RFE.Auth.API
 {
@@ -21,8 +27,23 @@ namespace RFE.Auth.API
         {
             Configuration = configuration;
         }
+        private const string DefaultAssemblyNamesPrefix = "RFE";
+        public IConfiguration Configuration { get; }protected virtual string AssemblyNamesPrefix
+        {
+            get
+            {
+                return DefaultAssemblyNamesPrefix;
+            }
+        }
 
-        public IConfiguration Configuration { get; }
+        protected virtual IEnumerable<Assembly> ProjectAssemblies
+        {
+            get
+            {
+                var assemblies = AppDomain.CurrentDomain.GetAssemblies().Where(m => m.GetName().Name.StartsWith(AssemblyNamesPrefix, true, CultureInfo.InvariantCulture));
+                return assemblies;
+            }
+        }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -30,6 +51,10 @@ namespace RFE.Auth.API
             services.AddControllers();
              //Add Swagger relates setting  
             services.AddSwaggerGen();
+            #region  Add Services
+                services.AddScoped<IAuthService, AuthService>();
+                services.AddScoped<IUserService, UserService>();
+            #endregion
             
             #region  SqlServer Config Section
             
@@ -41,6 +66,9 @@ namespace RFE.Auth.API
             services.AddDbContext<UserContext> (options => options.UseSqlServer($"Server={server},{port}; Initial Catalog={database};User ID={user};Password={password}"));
             services.Configure<SQLServerDockerConfig>(Configuration.GetSection("SQLServerDockerConfig"));
             #endregion
+
+            // Auto Mapper Configurations
+            services.AddAutoMapper(ProjectAssemblies);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -50,7 +78,8 @@ namespace RFE.Auth.API
             {
                 app.UseDeveloperExceptionPage();
             }
-
+        
+            PrepDB.PrepPopulation(app);
             app.UseHttpsRedirection();
 
             app.UseRouting();

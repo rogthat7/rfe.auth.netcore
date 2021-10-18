@@ -1,11 +1,6 @@
-using System;
-using System.Runtime.Serialization;
-using Newtonsoft.Json;
-
-namespace RFE.Auth.Core.Models.Users
+namespace RFE.Auth.API.Models.User
 {
-    [Serializable]
-    public class AppUser
+    public class AppUserGetResponseDto 
     {
         public int Id { get; set; }
         public string FirstName { get; set; }
@@ -13,8 +8,5 @@ namespace RFE.Auth.Core.Models.Users
         public string Username { get; set; }
         public string Email { get; set; }
         public int Phone { get; set; }
-
-        [JsonIgnore]
-        public string Password { get; set; }
     }
 }
