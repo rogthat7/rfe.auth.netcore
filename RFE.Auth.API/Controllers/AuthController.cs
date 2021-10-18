@@ -5,27 +5,28 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
-using RFE.Auth.API.Models;
+using RFE.Auth.Core.Interfaces.Services;
 using RFE.Auth.Core.Models;
-using RFE.Auth.Infrastructure.Repositories;
-
+using RFE.Auth.Core.Models.Auth;
 namespace RFE.Auth.API.Controllers
 {
     [ApiController]
     [Route("[controller]")]
     public class AuthController : ControllerBase
     {
-         private IUserService _userService;
+        private readonly IAuthService _authService;
+        private readonly IUserService _userService;
 
-        public AuthController(IUserService userService)
+        public AuthController(IAuthService authService, IUserService userService)
         {
-            _userService = userService;
+            _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
         }
 
         [HttpPost("authenticate")]
         public IActionResult Authenticate(AuthenticateRequest model)
         {
-            var response = _userService.Authenticate(model);
+            var response = _authService.Authenticate(model);
 
             if (response == null)
                 return BadRequest(new { message = "Username or password is incorrect" });
