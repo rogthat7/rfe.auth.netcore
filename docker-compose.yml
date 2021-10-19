@@ -1,4 +1,4 @@
-version: '3'
+version: '3.9'
 services:
   ms-sql-server:
     image: mcr.microsoft.com/mssql/server:2017-latest-ubuntu
@@ -9,6 +9,8 @@ services:
       MSSQL_PID: Express
     ports:
       - "1433:1433"
+    volumes: 
+      - data:/var/opt/mssql/data/:rw
   rfe-auth-api:
     build: .
     environment: 
@@ -16,3 +18,5 @@ services:
     container_name: rfe-auth-api
     ports: 
       - "8080:80" 
+volumes:
+  data: 
