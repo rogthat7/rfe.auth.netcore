@@ -11,11 +11,9 @@ namespace RFE.Auth.Infrastructure.Repositories.Shared
     {
         protected DbContext _context;
         protected DbSet<T> _dbSet;
-        protected ILogger _logger;
-        public GenericRepository(IUnitOfWork unitOfWork, DbContext context, ILogger logger)
+        public GenericRepository(IUnitOfWork unitOfWork, DbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async virtual Task<bool> Add(T entity)

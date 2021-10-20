@@ -59,9 +59,7 @@ namespace RFE.Auth.API
                 var connectionString = Configuration.GetConnectionString("DefaultConection");
                 return new UnitOfWork(connectionString);
             });
-            var serviceProvider = services.BuildServiceProvider();
-            var logger = serviceProvider.GetService<ILogger<UserContext>>();
-            services.AddSingleton(typeof(ILogger), logger);
+
             #region  Add Services
                 services.AddScoped<IAuthService, AuthService>();
                 services.AddScoped<IUserService, UserService>();
