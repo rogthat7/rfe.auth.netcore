@@ -1,6 +1,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
 using Microsoft.Extensions.Logging;
@@ -14,6 +16,9 @@ namespace RFE.Auth.Infrastructure.Repositories
     public class UserRepository: RepositoryBase, IUserRepository
     {
         private const string SprGetUsers = "AUTH.spr_GetAllUsers";
+        private const string SprGetUserById = "AUTH.spr_GetUserById";
+        private const string SprGetUnconfirmedUserById = "AUTH.spr_GetUnconfirmedUserById";
+        private const string SprGetUnconfirmedUsers = "AUTH.spr_GetUnconfirmedUsers";
 
         public UserRepository(IUnitOfWork unitOfWork) : base(unitOfWork)
         {
@@ -37,19 +42,40 @@ namespace RFE.Auth.Infrastructure.Repositories
             throw new NotImplementedException();
         }
 
-        public Task<AppUser> GetById(int id)
+        public async Task<AppUser> GetById(int id)
         {
-            throw new NotImplementedException();
+            var parameters = new DynamicParameters();
+            parameters.Add("@Id", DbType.Int32);
+            var res = await ExecuteStoredProcedureListResult<AppUser>(SprGetUserById, parameters);
+            return res.Response.FirstOrDefault() as AppUser;
         }
 
-        public Task<List<AppUser>> GetUnConfirmedUsers()
+        public async Task<List<AppUser>> GetUnConfirmedUsers()
         {
-            throw new NotImplementedException();
+            var parameters = new DynamicParameters();
+            var res = await ExecuteStoredProcedureListResult<AppUser>(SprGetUnconfirmedUsers, parameters);
+            return res.Response as List<AppUser>;
         }
-
-        public Task<bool> Upsert(AppUser entity)
+        public async Task<AppUser> GetUnConfirmedUsersById(int Id)
         {
-            throw new NotImplementedException();
+            var parameters = new DynamicParameters();
+            parameters.Add("@Id", DbType.Int32);
+            var res = await ExecuteStoredProcedureListResult<AppUser>(SprGetUnconfirmedUserById, parameters);
+            return res.Response.FirstOrDefault() as AppUser;
+        }
+        public async Task<bool> Upsert(AppUser entity)
+        {
+            if (entity is null)
+            {
+                throw new ArgumentNullException(nameof(entity));
+            }
+           
+            var parameters = new DynamicParameters();
+            parameters.Add("@FirstName", entity.FirstName, dbType: DbType.String);
+            parameters.Add("@LastName", entity.LastName, dbType: DbType.String);
+            parameters.Add("@Email", entity.Email, dbType: DbType.String);
+            parameters.Add("@Username", entity.Username, dbType: DbType.String);
+            parameters.Add("@Phone", entity.Phone, dbType: DbType.Int64);
         }
     }
 }

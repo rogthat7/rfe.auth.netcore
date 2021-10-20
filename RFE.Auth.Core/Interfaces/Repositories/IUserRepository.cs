@@ -14,5 +14,6 @@ namespace RFE.Auth.Core.Interfaces.Repositories
         Task<bool> Delete(int id);
         Task<bool> Upsert(AppUser entity);
         Task<List<AppUser>> GetUnConfirmedUsers();
+        Task<AppUser> GetUnConfirmedUsersById(int Id);
     }
 }
