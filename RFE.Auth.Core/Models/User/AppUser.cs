@@ -2,7 +2,7 @@ using System;
 using System.Runtime.Serialization;
 using Newtonsoft.Json;
 
-namespace RFE.Auth.Core.Models.Users
+namespace RFE.Auth.Core.Models.User
 {
     [Serializable]
     public class AppUser
@@ -12,7 +12,8 @@ namespace RFE.Auth.Core.Models.Users
         public string LastName { get; set; }
         public string Username { get; set; }
         public string Email { get; set; }
-        public int Phone { get; set; }
+        public long Phone { get; set; }
+        public bool Confirmed { get; set; } = false;
 
         [JsonIgnore]
         public string Password { get; set; }

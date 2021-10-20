@@ -1,12 +1,13 @@
+using System.Collections.Generic;
+using Newtonsoft.Json;
+using RFE.Auth.API.Models.Shared;
+using RFE.Auth.Core.Models.User;
+
 namespace RFE.Auth.API.Models.User
 {
-    public class AppUserGetResponseDto 
+    public class AppUserGetResponseDto : BaseDto
     {
-        public int Id { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string Username { get; set; }
-        public string Email { get; set; }
-        public int Phone { get; set; }
+        [JsonProperty(Order = 2)]
+        public List<AppUser> Data { get; set; }
     }
 }

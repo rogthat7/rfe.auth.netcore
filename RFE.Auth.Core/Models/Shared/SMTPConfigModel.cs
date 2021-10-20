@@ -1,4 +1,4 @@
-namespace RFE.Auth.API.Models
+namespace RFE.Auth.Core.Models.Shared
 {
     public class SMTPConfigModel
     {

@@ -3,12 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
-using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,8 +12,14 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using RFE.Auth.API.Models;
 using RFE.Auth.API.Models.User;
+using RFE.Auth.Core.Interfaces.Repositories;
+using RFE.Auth.Core.Interfaces.Repositories.Shared;
 using RFE.Auth.Core.Interfaces.Services;
+using RFE.Auth.Core.Models;
+using RFE.Auth.Core.Models.Shared;
+using RFE.Auth.Core.Models.User;
 using RFE.Auth.Core.Services;
+using RFE.Auth.Infrastructure.Repositories;
 
 namespace RFE.Auth.API
 {
@@ -28,7 +30,8 @@ namespace RFE.Auth.API
             Configuration = configuration;
         }
         private const string DefaultAssemblyNamesPrefix = "RFE";
-        public IConfiguration Configuration { get; }protected virtual string AssemblyNamesPrefix
+        public IConfiguration Configuration { get; }
+        protected virtual string AssemblyNamesPrefix
         {
             get
             {
@@ -51,24 +54,38 @@ namespace RFE.Auth.API
             services.AddControllers();
              //Add Swagger relates setting  
             services.AddSwaggerGen();
+            services.AddScoped<IUnitOfWork, UnitOfWork>(serviceProvider =>
+            {
+                var connectionString = Configuration.GetConnectionString("DefaultConection");
+                return new UnitOfWork(connectionString);
+            });
+            var serviceProvider = services.BuildServiceProvider();
+            var logger = serviceProvider.GetService<ILogger<UserContext>>();
+            services.AddSingleton(typeof(ILogger), logger);
             #region  Add Services
                 services.AddScoped<IAuthService, AuthService>();
                 services.AddScoped<IUserService, UserService>();
             #endregion
+
+            #region  Add Repositories
+                services.AddScoped<IUserRepository, UserRepository>();
+            #endregion
             
             #region  SqlServer Config Section
             
-            var  server = Configuration.GetValue<string>("SQLServerDockerConfig:SQLServer");
-            var  port = Configuration.GetValue<string>("SQLServerDockerConfig:SQLPort");
-            var  database = Configuration.GetValue<string>("SQLServerDockerConfig:SQLDatabase");
-            var  user = Configuration.GetValue<string>("SQLServerDockerConfig:SQLUser");
-            var  password = Configuration.GetValue<string>("SQLServerDockerConfig:SQLPassword");
-            services.AddDbContext<UserContext> (options => options.UseSqlServer($"Server={server},{port}; Initial Catalog={database};User ID={user};Password={password}"));
-            services.Configure<SQLServerDockerConfig>(Configuration.GetSection("SQLServerDockerConfig"));
+            // var  server = Configuration.GetValue<string>("SQLServerDockerConfig:SQLServer");
+            // var  port = Configuration.GetValue<string>("SQLServerDockerConfig:SQLPort");
+            // var  database = Configuration.GetValue<string>("SQLServerDockerConfig:SQLDatabase");
+            // var  user = Configuration.GetValue<string>("SQLServerDockerConfig:SQLUser");
+            // var  password = Configuration.GetValue<string>("SQLServerDockerConfig:SQLPassword");
+            //services.AddDbContext<UserContext> (options => options.UseSqlServer($"Server={server},{port}; Initial Catalog={database};User ID={user};Password={password}"));
+            services.AddDbContext<UserContext> (options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConection")));
+            // services.Configure<SQLServerDockerConfig>(Configuration.GetSection("SQLServerDockerConfig"));
             #endregion
 
             // Auto Mapper Configurations
             services.AddAutoMapper(ProjectAssemblies);
+            services.AddControllers().AddNewtonsoftJson();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -79,7 +96,7 @@ namespace RFE.Auth.API
                 app.UseDeveloperExceptionPage();
             }
         
-            PrepDB.PrepPopulation(app);
+            //PrepDB.PrepPopulation(app);
             app.UseHttpsRedirection();
 
             app.UseRouting();

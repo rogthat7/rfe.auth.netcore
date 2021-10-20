@@ -12,7 +12,6 @@ using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Interfaces.Services;
 using RFE.Auth.Core.Models;
 using RFE.Auth.Core.Models.Auth;
-using RFE.Auth.Core.Models.Users;
 
 namespace RFE.Auth.API.Controllers
 {
@@ -20,15 +19,13 @@ namespace RFE.Auth.API.Controllers
     [Route("[controller]")]
     public class AuthController : ControllerBase
     {
-        private readonly UserContext _context;
         private readonly IAuthService _authService;
         private readonly IUserService _userService;
         private readonly IMapper _mapper;
 
 
-        public AuthController(IAuthService authService, IUserService userService, UserContext context, IMapper mapper)
+        public AuthController(IAuthService authService, IUserService userService, IMapper mapper)
         {
-            _context = context;
             _mapper = mapper;
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
@@ -57,12 +54,14 @@ namespace RFE.Auth.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         // [Authorize]
         [HttpGet("users")]
-        public ActionResult<IEnumerable<AppUserGetResponseDto>> GetAll()
+        public async Task<ActionResult<IEnumerable<AppUserGetResponseDto>>> GetAll()
         {
-            var users =  _mapper.Map<List<AppUserGetResponseDto>>(_context.AppUsers);
-            return users;
-            // var users = _userService.GetAll();
-            // return Ok(users);
+            var users = await _userService.GetAllRegisteredUsers();
+
+            return Ok(new AppUserGetResponseDto(){
+                Data = users, 
+                Status = "OK"
+            } );
         }
 
     }

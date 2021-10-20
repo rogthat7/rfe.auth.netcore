@@ -1,8 +1,8 @@
 
 using Microsoft.EntityFrameworkCore;
-using RFE.Auth.Core.Models.Users;
+using RFE.Auth.Core.Models.User;
 
-namespace RFE.Auth.API.Models
+namespace RFE.Auth.API.Models.User
 {
     public class UserContext : DbContext
     {
@@ -10,6 +10,6 @@ namespace RFE.Auth.API.Models
         {
             
         }
-        public DbSet<AppUser> AppUsers {get; set;}
+        public virtual DbSet<AppUser> AppUsers {get; set;}
     }
 }

@@ -1,5 +1,5 @@
 using RFE.Auth.Core.Models.Auth;
-using RFE.Auth.Core.Models.Users;
+using RFE.Auth.Core.Models.User;
 
 namespace RFE.Auth.API.Models.User
 {
