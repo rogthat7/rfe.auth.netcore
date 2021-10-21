@@ -8,28 +8,33 @@ using RFE.Auth.Core.Models.User;
 
 namespace RFE.Auth.Core.Services
 {
-    public class UserService : IUserService
+    public class UserService : IAuthUserService
     {
-        private IUserRepository _userRepository;
+        private IAuthUserRepository _userRepository;
 
         /// <summary>
         /// UserService
         /// </summary>
         /// <param name="userRepository"></param>
         /// <returns></returns>
-        public UserService(IUserRepository userRepository) 
+        public UserService(IAuthUserRepository userRepository) 
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         }
 
-        public async Task<List<AppUser>> GetAllRegisteredUsers()
+        public Task<UnconfirmedAuthUser> AddNewAuthUser(UnconfirmedAuthUser authUser)
         {
-            return await _userRepository.All() as List<AppUser>;
+            throw new NotImplementedException();
         }
 
-        public async Task<AppUser> GetUserById(int id)
+        public async Task<List<AuthUser>> GetAllRegisteredUsers()
         {
-             return await _userRepository.GetById(id) as AppUser;
+            return await _userRepository.All() as List<AuthUser>;
+        }
+
+        public async Task<AuthUser> GetUserById(int id)
+        {
+             return await _userRepository.GetById(id) as AuthUser;
         }
     }
 }

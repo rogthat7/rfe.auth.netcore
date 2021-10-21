@@ -29,7 +29,7 @@ namespace RFE.Auth.API.Models
             {
                 System.Console.WriteLine("Adding Data - Seeding...");
                 userContext.AppUsers.AddRange(
-                    new AppUser() {
+                    new AuthUser() {
                         Email = "admin@fish-tracker.com",
                         FirstName = "Admin",
                         Username = "admin@fish-tracker.com",

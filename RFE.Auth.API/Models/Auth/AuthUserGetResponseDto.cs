@@ -5,7 +5,7 @@ namespace RFE.Auth.API.Models.User
 {
     public class AuthUserGetResponseDto : AuthenticateResponse
     {
-        public AuthUserGetResponseDto(AppUser user, string token) : base(user, token)
+        public AuthUserGetResponseDto(AuthUser user, string token) : base(user, token)
         {
         }
     }

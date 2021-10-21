@@ -5,9 +5,9 @@ using RFE.Auth.Core.Models.User;
 
 namespace RFE.Auth.API.Models.User
 {
-    public class AppUserGetResponseDto : BaseDto
+    public class AuthUserByIdGetResponseDto : BaseDto
     {
         [JsonProperty(Order = 2)]
-        public List<AppUser> Data { get; set; }
+        public AuthUser Data { get; set; }
     }
 }

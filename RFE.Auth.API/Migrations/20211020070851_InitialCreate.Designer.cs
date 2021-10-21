@@ -20,7 +20,7 @@ namespace RFE.Auth.API.Migrations
                 .HasAnnotation("ProductVersion", "5.0.11")
                 .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-            modelBuilder.Entity("RFE.Auth.Core.Models.User.AppUser", b =>
+            modelBuilder.Entity("RFE.Auth.Core.Models.User.AuthUser", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

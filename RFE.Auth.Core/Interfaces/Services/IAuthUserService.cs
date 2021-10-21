@@ -5,10 +5,11 @@ using RFE.Auth.Core.Models.User;
 
 namespace RFE.Auth.Core.Interfaces.Services
 {
-    public interface IUserService
+    public interface IAuthUserService
     {
-        Task<List<AppUser>> GetAllRegisteredUsers();
+        Task<List<AuthUser>> GetAllRegisteredUsers();
         
-        Task<AppUser> GetUserById(int id);
+        Task<AuthUser> GetUserById(int id);
+        Task AddNewAuthUser(UnconfirmedAppUser authUser);
     }
 }

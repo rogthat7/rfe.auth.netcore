@@ -69,12 +69,12 @@ namespace RFE.Auth.API
 
             #region  Add Services
                 services.AddScoped<IAuthService, AuthService>();
-                services.AddScoped<IUserService, UserService>();
+                services.AddScoped<IAuthUserService, UserService>();
                 services.AddScoped<IEmailSender, EmailSender>();
             #endregion
 
             #region  Add Repositories
-                services.AddScoped<IUserRepository, UserRepository>();
+                services.AddScoped<IAuthUserRepository, AuthUserRepository>();
             #endregion
             
             #region  SqlServer Config Section

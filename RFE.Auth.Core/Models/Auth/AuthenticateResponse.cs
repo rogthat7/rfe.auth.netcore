@@ -11,7 +11,7 @@ namespace RFE.Auth.Core.Models.Auth
         public string Token { get; set; }
 
 
-        public AuthenticateResponse(AppUser user, string token)
+        public AuthenticateResponse(AuthUser user, string token)
         {
             Id = user.Id;
             FirstName = user.FirstName;

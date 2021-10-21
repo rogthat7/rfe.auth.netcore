@@ -10,6 +10,6 @@ namespace RFE.Auth.API.Models.User
         {
             
         }
-        public virtual DbSet<AppUser> AppUsers {get; set;}
+        public virtual DbSet<AuthUser> AppUsers {get; set;}
     }
 }

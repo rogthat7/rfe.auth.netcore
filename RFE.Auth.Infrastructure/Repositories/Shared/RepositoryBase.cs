@@ -73,7 +73,7 @@ namespace RFE.Auth.Infrastructure.Repositories.Shared
             
             return await _unitOfWork.DbConnection.QueryMultipleAsync(commandDefinition);            
         }
-        protected virtual async Task<ResponseContainer<T>> ExecuteStoredProcedureUpdateDeleteResult<T>(string storedProcedureName, DynamicParameters parameters) where T: UpdateDeleteResponseBase
+        protected virtual async Task<int> ExecuteStoredProcedureUpdateDeleteResult(string storedProcedureName, DynamicParameters parameters) 
         {
             if (string.IsNullOrEmpty(storedProcedureName))
             {
@@ -87,20 +87,18 @@ namespace RFE.Auth.Infrastructure.Repositories.Shared
             
             var commandDefinition = new CommandDefinition(storedProcedureName, parameters, commandType: CommandType.StoredProcedure);
             
-            return await ExecuteStoredProcedureUpdateDeleteResult<T>(commandDefinition);                         
+            return await ExecuteStoredProcedureUpdateDeleteResult(commandDefinition);                         
         }
 
-        protected virtual async Task<ResponseContainer<T>> ExecuteStoredProcedureUpdateDeleteResult<T>(CommandDefinition commandDefinition) where T: UpdateDeleteResponseBase
+        protected virtual async Task<int> ExecuteStoredProcedureUpdateDeleteResult(CommandDefinition commandDefinition) 
         {
             if (commandDefinition.Equals(default(CommandDefinition)))            
             {
                 throw new ArgumentNullException(nameof(commandDefinition));
             }
             
-            var response = Activator.CreateInstance<T>();
-            response.RowsAffected = await _unitOfWork.DbConnection.ExecuteAsync(commandDefinition);
-            
-            return CreateResponseContainer<T>(response, commandDefinition.Parameters as DynamicParameters);            
+            return await _unitOfWork.DbConnection.ExecuteAsync(commandDefinition);
+                       
         }
         protected virtual async Task<int> ExecuteStoredProcedureCreateResult(string storedProcedureName, DynamicParameters parameters) 
         {

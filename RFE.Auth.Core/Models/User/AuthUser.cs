@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 namespace RFE.Auth.Core.Models.User
 {
     [Serializable]
-    public class AppUser
+    public class AuthUser
     {
         public int Id { get; set; }
         public string FirstName { get; set; }
@@ -13,7 +13,7 @@ namespace RFE.Auth.Core.Models.User
         public string Username { get; set; }
         public string Email { get; set; }
         public long Phone { get; set; }
-        public bool Confirmed { get; set; } = false;
+        public virtual bool Confirmed { get; set; } = false;
 
         [JsonIgnore]
         public string Password { get; set; }
