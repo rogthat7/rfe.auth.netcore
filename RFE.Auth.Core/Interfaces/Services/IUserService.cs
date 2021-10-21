@@ -8,5 +8,7 @@ namespace RFE.Auth.Core.Interfaces.Services
     public interface IUserService
     {
         Task<List<AppUser>> GetAllRegisteredUsers();
+        
+        Task<AppUser> GetUserById(int id);
     }
 }

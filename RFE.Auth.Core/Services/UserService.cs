@@ -26,5 +26,10 @@ namespace RFE.Auth.Core.Services
         {
             return await _userRepository.All() as List<AppUser>;
         }
+
+        public async Task<AppUser> GetUserById(int id)
+        {
+             return await _userRepository.GetById(id) as AppUser;
+        }
     }
 }

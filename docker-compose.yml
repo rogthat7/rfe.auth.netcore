@@ -21,3 +21,4 @@ services:
 volumes:
   data: 
   # docker run --rm --volumes-from ms-sql-server -v ${PWD}/data:/backup busybox tar cvfz /backup/sqldata.tar var/opt/mssql/data/ 
+  # docker run --rm --volumes-from ms-sql-server -v ${PWD}/data:/backup busybox tar xvf /backup/sqldata.tar 

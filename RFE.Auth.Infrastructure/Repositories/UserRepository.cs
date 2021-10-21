@@ -46,7 +46,7 @@ namespace RFE.Auth.Infrastructure.Repositories
         {
             var parameters = new DynamicParameters();
             parameters.Add("@Id", DbType.Int32);
-            var res = await ExecuteStoredProcedureListResult<AppUser>(SprGetUserById, parameters);
+            var res = await ExecuteStoredProcedureListResult<dynamic>(SprGetUserById, parameters);
             return res.Response.FirstOrDefault() as AppUser;
         }
 
