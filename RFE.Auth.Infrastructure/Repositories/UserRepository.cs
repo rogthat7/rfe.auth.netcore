@@ -45,8 +45,8 @@ namespace RFE.Auth.Infrastructure.Repositories
         public async Task<AppUser> GetById(int id)
         {
             var parameters = new DynamicParameters();
-            parameters.Add("@Id", DbType.Int32);
-            var res = await ExecuteStoredProcedureListResult<dynamic>(SprGetUserById, parameters);
+            parameters.Add("@Id", id, DbType.Int32);
+            var res = await ExecuteStoredProcedureListResult<AppUser>(SprGetUserById, parameters);
             return res.Response.FirstOrDefault() as AppUser;
         }
 
@@ -76,8 +76,11 @@ namespace RFE.Auth.Infrastructure.Repositories
             parameters.Add("@Email", entity.Email, dbType: DbType.String);
             parameters.Add("@Username", entity.Username, dbType: DbType.String);
             parameters.Add("@Phone", entity.Phone, dbType: DbType.Int64);
-
-            return true;
+            var res = await ExecuteStoredProcedureCreateResult(SprGetUnconfirmedUserById, parameters);
+            if (res > 0)
+                return true;
+            else
+                return false;
         }
     }
 }
