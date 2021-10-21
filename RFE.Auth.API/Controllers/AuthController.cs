@@ -12,6 +12,7 @@ using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Interfaces.Services;
 using RFE.Auth.Core.Models;
 using RFE.Auth.Core.Models.Auth;
+using RFE.Auth.Core.Models.Email;
 
 namespace RFE.Auth.API.Controllers
 {
@@ -22,11 +23,12 @@ namespace RFE.Auth.API.Controllers
         private readonly IAuthService _authService;
         private readonly IUserService _userService;
         private readonly IMapper _mapper;
+        private readonly IEmailSender _emailSender;
 
-
-        public AuthController(IAuthService authService, IUserService userService, IMapper mapper)
+        public AuthController(IAuthService authService, IUserService userService, IMapper mapper, IEmailSender emailSender)
         {
-            _mapper = mapper;
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
             _userService = userService ?? throw new ArgumentNullException(nameof(userService));
         }
@@ -76,6 +78,22 @@ namespace RFE.Auth.API.Controllers
 
             return Ok(new AppUserByIdGetResponseDto(){
                 Data = user, 
+                Status = "OK"
+            } );
+        }
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        // [Authorize]
+        [HttpPost("users/sendemail")]
+        public async Task<ActionResult<IEnumerable<AppUserGetResponseDto>>> SendEmailTest([FromBody] Message emailMessage)
+        {
+            await _emailSender.SendEmail(emailMessage);
+
+            return Ok(new AppUserByIdGetResponseDto(){
+                Data = null, 
                 Status = "OK"
             } );
         }

@@ -12,4 +12,12 @@ namespace RFE.Auth.Core.Models.Shared
         public bool UseDefaultCredentials { get; set; }
         public bool IsBodyHTML { get; set; }
     }
+    public class EmailConfiguration
+    {
+        public string From { get; set; }
+        public string SmtpServer { get; set; }
+        public int Port { get; set; }
+        public string UserName { get; set; }
+        public string Password { get; set; }
+    }
 }

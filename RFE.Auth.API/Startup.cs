@@ -60,9 +60,17 @@ namespace RFE.Auth.API
                 return new UnitOfWork(connectionString);
             });
 
+            #region Test Email Set Up
+            var emailConfig = Configuration
+                .GetSection("EmailConfiguration")
+                .Get<EmailConfiguration>();
+            services.AddSingleton(emailConfig);
+            #endregion
+
             #region  Add Services
                 services.AddScoped<IAuthService, AuthService>();
                 services.AddScoped<IUserService, UserService>();
+                services.AddScoped<IEmailSender, EmailSender>();
             #endregion
 
             #region  Add Repositories
