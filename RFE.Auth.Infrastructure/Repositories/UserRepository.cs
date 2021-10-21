@@ -76,6 +76,8 @@ namespace RFE.Auth.Infrastructure.Repositories
             parameters.Add("@Email", entity.Email, dbType: DbType.String);
             parameters.Add("@Username", entity.Username, dbType: DbType.String);
             parameters.Add("@Phone", entity.Phone, dbType: DbType.Int64);
+
+            return true;
         }
     }
 }
