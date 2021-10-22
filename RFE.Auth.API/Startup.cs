@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using RFE.Auth.API.Heplers;
 using RFE.Auth.API.Models;
 using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Interfaces.Repositories;
@@ -95,19 +96,21 @@ namespace RFE.Auth.API
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger logger)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
         
+            app.ConfigureExceptionHandler(logger);
             //PrepDB.PrepPopulation(app);
             app.UseHttpsRedirection();
 
             app.UseRouting();
 
             app.UseAuthorization();
+
 
             app.UseEndpoints(endpoints =>
             {
