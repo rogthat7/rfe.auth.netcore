@@ -20,7 +20,7 @@ namespace RFE.Auth.API.Controllers
     /// AuthController
     /// </summary>
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/v1/auth")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
