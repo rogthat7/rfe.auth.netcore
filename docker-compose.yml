@@ -22,3 +22,6 @@ volumes:
   data: 
   # docker run --rm --volumes-from ms-sql-server -v ${PWD}/data:/backup busybox tar cvfz /backup/sqldata.tar var/opt/mssql/data/ 
   # docker run --rm --volumes-from ms-sql-server -v ${PWD}/data:/backup busybox tar xvf /backup/sqldata.tar 
+  # docker run -v rfeauthnetcore_data:/var/opt/mssql/data/ -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Pa55w0rd2021' -e 'MSSQL_PID=Express' -p 1433:1433 -d --name ms-sql-server  mcr.microsoft.com/mssql/server:2017-latest-ubuntu
+
+

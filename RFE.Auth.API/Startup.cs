@@ -11,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
+using RFE.Auth.API.Helpers;
 using RFE.Auth.API.Heplers;
 using RFE.Auth.API.Models;
 using RFE.Auth.API.Models.User;
@@ -120,16 +121,16 @@ namespace RFE.Auth.API
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                app.UseMiddleware<ExceptionMiddleware>();
             }
         
-            app.ConfigureExceptionHandler(logger);
+            else app.ConfigureExceptionHandler(logger);
             //PrepDB.PrepPopulation(app);
             app.UseHttpsRedirection();
 
             app.UseRouting();
 
             app.UseAuthorization();
-
 
             app.UseEndpoints(endpoints =>
             {
