@@ -1,7 +1,9 @@
+using System;
 using Newtonsoft.Json;
 
 namespace RFE.Auth.Core.Models.User
 {
+    [Serializable]
     public class UnconfirmedAuthUser : AuthUser
     {
         [JsonIgnore]

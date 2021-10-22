@@ -17,18 +17,19 @@ namespace RFE.Auth.Infrastructure.Repositories
     {
         private const string SprGetUsers = "AUTH.spr_GetAllUsers";
         private const string SprGetUserById = "AUTH.spr_GetUserById";
-        private const string SprGetUnconfirmedUserById = "AUTH.spr_GetUnconfirmedUserById";
+        private const string SprGetUnconfirmedUserById = "AUTH.spr_GetUserById";
         private const string SprUpdateConfirmedUser = "AUTH.spr_UpdateConfirmedUser";
         private const string SprDeleteUserById = "AUTH.spr_SprDeleteUserById";
         private const string SprGetUnconfirmedUsers = "AUTH.spr_GetUnconfirmedUsers";
         private const string SprAddNewUser = "AUTH.spr_SprAddNewUser";
+        private readonly string SprDeleteUnconfirmedUserBy = "AUTH.spr_SprDeleteUnconfirmedUser";
 
         public AuthUserRepository(IUnitOfWork unitOfWork) : base(unitOfWork)
         {
             
         }
 
-        public async  Task<bool> Add(UnconfirmedAuthUser entity)
+        public async  Task<bool> AddNewUnconfirmedUser(UnconfirmedAuthUser entity)
         {
             if (entity is null)
             {
@@ -40,21 +41,22 @@ namespace RFE.Auth.Infrastructure.Repositories
             parameters.Add("@LastName", entity.LastName, dbType: DbType.String);
             parameters.Add("@Email", entity.Email, dbType: DbType.String);
             parameters.Add("@Username", entity.Username, dbType: DbType.String);
+            parameters.Add("@Password", entity.Password, dbType: DbType.String);
             parameters.Add("@Phone", entity.Phone, dbType: DbType.Int64);
             var res = await ExecuteStoredProcedureCreateResult(SprAddNewUser, parameters);
-            if (res > 0)
+            if (res >= 0)
                 return true;
             else
                 return false;
         }
-        public async Task<List<AuthUser>> All()
+        public async Task<List<AuthUserByIdGetResponse>> All()
         {
             var parameters = new DynamicParameters();
-            var res = await ExecuteStoredProcedureListResult<AuthUser>(SprGetUsers, parameters);
-            return res.Response as List<AuthUser>;
+            var res = await ExecuteStoredProcedureListResult<AuthUserByIdGetResponse>(SprGetUsers, parameters);
+            return res.Response as List<AuthUserByIdGetResponse>;
         }
 
-        public async Task<bool> Delete(int id)
+        public async Task<bool> DeleteById(int id)
         {
             var parameters = new DynamicParameters();
             parameters.Add("@Id", id, DbType.Int32);
@@ -65,12 +67,23 @@ namespace RFE.Auth.Infrastructure.Repositories
                 return false;
         }
 
-        public async Task<AuthUser> GetById(int id)
+        public async Task<bool> DeleteUnconfirmedUser(string username)
+        {
+            var parameters = new DynamicParameters();
+            parameters.Add("@UserName", username, DbType.String);
+            var res = await ExecuteStoredProcedureUpdateDeleteResult(SprDeleteUnconfirmedUserBy, parameters);
+            if (res>0)
+                return true;
+            else
+                return false;
+        }
+
+        public async Task<AuthUserByIdGetResponse> GetById(int id)
         {
             var parameters = new DynamicParameters();
             parameters.Add("@Id", id, DbType.Int32);
-            var res = await ExecuteStoredProcedureListResult<AuthUser>(SprGetUserById, parameters);
-            return res.Response.FirstOrDefault() as AuthUser;
+            var res = await ExecuteStoredProcedureListResult<AuthUserByIdGetResponse>(SprGetUserById, parameters);
+            return res.Response.FirstOrDefault() as AuthUserByIdGetResponse;
         }
 
         public async Task<List<UnconfirmedAuthUser>> GetUnConfirmedUsers()

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Newtonsoft.Json;
 using RFE.Auth.API.Models.Shared;
 using RFE.Auth.Core.Models.User;
@@ -6,15 +5,15 @@ using RFE.Auth.Core.Models.User;
 namespace RFE.Auth.API.Models.User
 {
     /// <summary>
-    /// AuthUserByIdGetResponseDto
+    /// AuthUserAddPostRequestDto
     /// </summary>
-    public class AuthUserByIdGetResponseDto : BaseDto
+    public class AuthUserAddPostResponseDto : BaseDto
     {
         /// <summary>
-        /// Data
+        /// Message
         /// </summary>
         /// <value></value>
         [JsonProperty(Order = 2)]
-        public AuthUserByIdGetResponse Data { get; set; }
+        public string Message { get; set; }
     }
 }

@@ -8,6 +8,6 @@ namespace RFE.Auth.API.Models.User
     public class AppUserGetResponseDto : BaseDto
     {
         [JsonProperty(Order = 2)]
-        public List<AuthUser> Data { get; set; }
+        public List<AuthUserByIdGetResponse> Data { get; set; }
     }
 }

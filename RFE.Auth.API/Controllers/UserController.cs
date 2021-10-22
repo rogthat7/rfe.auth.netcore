@@ -6,6 +6,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
+using RFE.Auth.API.Helpers;
 using RFE.Auth.API.Models.Examples;
 using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Interfaces.Services;
@@ -88,23 +89,31 @@ namespace RFE.Auth.API.Controllers
         /// </summary>
         /// <param name="AuthUser"></param>
         /// <returns></returns>
-        [ProducesResponseType(typeof(AuthUserAddPostRequestDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(AuthUserAddPostResponseDto), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
+        [SwaggerRequestExample(typeof(UnconfirmedAuthUser), typeof(AddNewUserExample))]
         // [Authorize]
         [HttpPost]
         public async Task<ActionResult<AuthUserByIdGetResponseDto>> AddAuthUser([FromBody] AuthUserAddPostRequestDto AuthUser)
         {
             var model = _mapper.Map<UnconfirmedAuthUser>(AuthUser);
+            model.Password = EncryptionHelper.HashPassword(model.Password);
             var authuser = await _authuserService.AddNewAuthUser(model);
-
-            return Ok(new AuthUserByIdGetResponseDto(){
-                Data = authuser, 
-                Status = "OK"
-            } );
+            if (authuser)
+            {
+                return Ok(new AuthUserAddPostResponseDto(){
+                    Message = "User Added Please Confirm via Email", 
+                    Status = "OK"
+                } );
+            }
+            else return Ok(new AuthUserAddPostResponseDto(){
+                    Message = "Error Adding a User", 
+                    Status = "Failed"
+                } );
         }
         /// <summary>
         /// SendEmailTest
