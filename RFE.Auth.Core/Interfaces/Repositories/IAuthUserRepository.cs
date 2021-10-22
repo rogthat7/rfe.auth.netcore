@@ -10,10 +10,10 @@ namespace RFE.Auth.Core.Interfaces.Repositories
 
         Task<List<AuthUser>> All();
         Task<AuthUser> GetById(int id);
-        Task<bool> Add(UnconfirmedAppUser entity);
+        Task<bool> Add(UnconfirmedAuthUser entity);
         Task<bool> Delete(int id);
         Task<bool> Upsert(AuthUser entity);
-        Task<List<UnconfirmedAppUser>> GetUnConfirmedUsers();
-        Task<UnconfirmedAppUser> GetUnConfirmedUsersById(int Id);
+        Task<List<UnconfirmedAuthUser>> GetUnConfirmedUsers();
+        Task<UnconfirmedAuthUser> GetUnConfirmedUsersById(int Id);
     }
 }

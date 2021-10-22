@@ -7,8 +7,16 @@ using RFE.Auth.Core.Models.Shared;
 
 namespace RFE.Auth.API.Heplers
 {
+    /// <summary>
+    /// ExceptionMiddlewareExtensions
+    /// </summary>
     public static class ExceptionMiddlewareExtensions
     {
+        /// <summary>
+        /// ConfigureExceptionHandler
+        /// </summary>
+        /// <param name="app"></param>
+        /// <param name="logger"></param>
         public static void ConfigureExceptionHandler(this IApplicationBuilder app, ILogger logger)
         {
             app.UseExceptionHandler(appError =>
@@ -26,7 +34,7 @@ namespace RFE.Auth.API.Heplers
                         await context.Response.WriteAsync(new ErrorDetails
                         {
                             StatusCode = context.Response.StatusCode,
-                            Message = "Inteternal Server Error"
+                            Message = "Internal Server Error"
                         }.ToString());
                     }
                 });

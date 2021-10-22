@@ -16,6 +16,9 @@ using RFE.Auth.Core.Models.Email;
 
 namespace RFE.Auth.API.Controllers
 {
+    /// <summary>
+    /// AuthController
+    /// </summary>
     [ApiController]
     [Route("[controller]")]
     public class AuthController : ControllerBase
@@ -32,7 +35,11 @@ namespace RFE.Auth.API.Controllers
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
         }
-        
+        /// <summary>
+        /// Authenticate
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]

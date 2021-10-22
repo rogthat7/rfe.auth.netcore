@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.OpenApi.Models;
 using RFE.Auth.API.Heplers;
 using RFE.Auth.API.Models;
 using RFE.Auth.API.Models.User;
@@ -39,7 +40,10 @@ namespace RFE.Auth.API
                 return DefaultAssemblyNamesPrefix;
             }
         }
-
+        /// <summary>
+        /// gets all assemblies
+        /// </summary>
+        /// <value></value>
         protected virtual IEnumerable<Assembly> ProjectAssemblies
         {
             get
@@ -49,12 +53,23 @@ namespace RFE.Auth.API
             }
         }
 
-        // This method gets called by the runtime. Use this method to add services to the container.
+        /// <summary>
+        /// This method gets called by the runtime. Use this method to add services to the container.
+        /// </summary>
+        /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.AddLogging();
              //Add Swagger relates setting  
-            services.AddSwaggerGen();
+            
+            services.AddSwaggerGen(c =>
+            {
+                    c.SwaggerDoc("v1", new OpenApiInfo{
+                        Title = "rfe.auth.api",
+                        Version = "V1"
+                    });
+            });
             services.AddScoped<IUnitOfWork, UnitOfWork>(serviceProvider =>
             {
                 var connectionString = Configuration.GetConnectionString("DefaultConection");
@@ -94,9 +109,13 @@ namespace RFE.Auth.API
             services.AddAutoMapper(ProjectAssemblies);
             services.AddControllers().AddNewtonsoftJson();
         }
-
-        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger logger)
+        /// <summary>
+        /// // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        /// </summary>
+        /// <param name="app"></param>
+        /// <param name="env"></param>
+        /// <param name="logger"></param>
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
             if (env.IsDevelopment())
             {

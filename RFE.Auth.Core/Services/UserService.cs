@@ -26,7 +26,6 @@ namespace RFE.Auth.Core.Services
         {
             throw new NotImplementedException();
         }
-
         public async Task<List<AuthUser>> GetAllRegisteredUsers()
         {
             return await _userRepository.All() as List<AuthUser>;

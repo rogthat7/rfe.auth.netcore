@@ -10,6 +10,6 @@ namespace RFE.Auth.Core.Interfaces.Services
         Task<List<AuthUser>> GetAllRegisteredUsers();
         
         Task<AuthUser> GetUserById(int id);
-        Task AddNewAuthUser(UnconfirmedAppUser authUser);
+        Task<UnconfirmedAuthUser> AddNewAuthUser(UnconfirmedAuthUser authUser);
     }
 }

@@ -28,7 +28,7 @@ namespace RFE.Auth.Infrastructure.Repositories
             
         }
 
-        public async  Task<bool> Add(UnconfirmedAppUser entity)
+        public async  Task<bool> Add(UnconfirmedAuthUser entity)
         {
             if (entity is null)
             {
@@ -47,7 +47,6 @@ namespace RFE.Auth.Infrastructure.Repositories
             else
                 return false;
         }
-
         public async Task<List<AuthUser>> All()
         {
             var parameters = new DynamicParameters();
@@ -74,19 +73,21 @@ namespace RFE.Auth.Infrastructure.Repositories
             return res.Response.FirstOrDefault() as AuthUser;
         }
 
-        public async Task<List<UnconfirmedAppUser>> GetUnConfirmedUsers()
+        public async Task<List<UnconfirmedAuthUser>> GetUnConfirmedUsers()
         {
             var parameters = new DynamicParameters();
-            var res = await ExecuteStoredProcedureListResult<UnconfirmedAppUser>(SprGetUnconfirmedUsers, parameters);
-            return res.Response as List<UnconfirmedAppUser>;
+            var res = await ExecuteStoredProcedureListResult<UnconfirmedAuthUser>(SprGetUnconfirmedUsers, parameters);
+            return res.Response as List<UnconfirmedAuthUser>;
         }
-        public async Task<UnconfirmedAppUser> GetUnConfirmedUsersById(int Id)
+
+        public async Task<UnconfirmedAuthUser> GetUnConfirmedUsersById(int Id)
         {
             var parameters = new DynamicParameters();
             parameters.Add("@Id", DbType.Int32);
-            var res = await ExecuteStoredProcedureListResult<UnconfirmedAppUser>(SprGetUnconfirmedUserById, parameters);
-            return res.Response.FirstOrDefault() as UnconfirmedAppUser;
+            var res = await ExecuteStoredProcedureListResult<UnconfirmedAuthUser>(SprGetUnconfirmedUserById, parameters);
+            return res.Response.FirstOrDefault() as UnconfirmedAuthUser;
         }
+
         public async Task<bool> Upsert(AuthUser entity)
         {
             if (entity is null)

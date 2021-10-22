@@ -1,16 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net.Mail;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
+using RFE.Auth.API.Models.Examples;
 using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Interfaces.Services;
 using RFE.Auth.Core.Models.Email;
+using RFE.Auth.Core.Models.Shared;
 using RFE.Auth.Core.Models.User;
+using Swashbuckle.AspNetCore.Filters;
 
 namespace RFE.Auth.API.Controllers
 {
+    /// <summary>
+    /// UserController
+    /// </summary>
     [ApiController]
     [Route("[controller]")]
     public class UserController : ControllerBase
@@ -31,12 +39,16 @@ namespace RFE.Auth.API.Controllers
             _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
             _authuserService = authuserService ?? throw new ArgumentNullException(nameof(authuserService));
         }
-
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        /// <summary>
+        /// GetAll Users
+        /// </summary>
+        /// <returns></returns>
+        [ProducesResponseType(typeof(IEnumerable<AuthUserGetResponseDto>),StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
         // [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<AuthUserGetResponseDto>>> GetAll()
@@ -48,11 +60,17 @@ namespace RFE.Auth.API.Controllers
                 Status = "OK"
             } );
         }
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        /// <summary>
+        /// GetAuthUserById
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [ProducesResponseType(typeof(AuthUserGetResponseDto),StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
         // [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<AuthUserByIdGetResponseDto>> GetAuthUserById([FromRoute] int id)
@@ -64,11 +82,18 @@ namespace RFE.Auth.API.Controllers
                 Status = "OK"
             } );
         }
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+
+        /// <summary>
+        /// AddAuthUser
+        /// </summary>
+        /// <param name="AuthUser"></param>
+        /// <returns></returns>
+        [ProducesResponseType(typeof(AuthUserAddPostRequestDto), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
         // [Authorize]
         [HttpPost]
         public async Task<ActionResult<AuthUserByIdGetResponseDto>> AddAuthUser([FromBody] AuthUserAddPostRequestDto AuthUser)
@@ -81,13 +106,20 @@ namespace RFE.Auth.API.Controllers
                 Status = "OK"
             } );
         }
+        /// <summary>
+        /// SendEmailTest
+        /// </summary>
+        /// <param name="emailMessage"></param>
+        /// <returns></returns>
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
+        [SwaggerRequestExample(typeof(Message), typeof(SendEmailModelExample))]
         // [Authorize]
-        [HttpPost("authusers/sendemail")]
+        [HttpPost("sendemail")]
         public async Task<ActionResult> SendEmailTest([FromBody] Message emailMessage)
         {
             await _emailSender.SendEmail(emailMessage);
