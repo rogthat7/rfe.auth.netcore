@@ -4,9 +4,13 @@ using Newtonsoft.Json;
 namespace RFE.Auth.Core.Models.User
 {
     [Serializable]
-    public class UnconfirmedAuthUser : AuthUser
+    public class UnconfirmedAuthUser 
     {
-        [JsonIgnore]
-        public override bool Confirmed { get; set; } = false;
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public string Username { get; set; }
+        public string Email { get; set; }
+        public long Phone { get; set; }
+        public virtual string Password { get; set; }
     }
 }

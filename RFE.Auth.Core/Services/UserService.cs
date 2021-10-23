@@ -17,6 +17,7 @@ namespace RFE.Auth.Core.Services
         private IAuthUserRepository _userRepository;
         private IEmailSender _emailSenderService;
         private string _unconfirmedUserName = null;
+        private Timer userDestructionTimer;
 
         /// <summary>
         /// UserService
@@ -59,15 +60,18 @@ namespace RFE.Auth.Core.Services
         
         private  void SetUserDestructionTimer(UnconfirmedAuthUser unconfirmedUser)
         {
-            Timer t = new Timer(60000);
-            t.AutoReset = true;
-            t.Elapsed += new ElapsedEventHandler(OnTimedEvent);
-            t.Start();
+            userDestructionTimer = new Timer(60000);
+            userDestructionTimer.AutoReset = false;
+            userDestructionTimer.Elapsed += new ElapsedEventHandler(OnTimedEvent);
+            userDestructionTimer.Start();
+            
         }
 
         private async void OnTimedEvent(object sender, ElapsedEventArgs e)
         {
             var userDeleted = await _userRepository.DeleteUnconfirmedUser(this._unconfirmedUserName);
+            userDestructionTimer.Stop();
+            userDestructionTimer.Dispose();
         }
     }
 }
