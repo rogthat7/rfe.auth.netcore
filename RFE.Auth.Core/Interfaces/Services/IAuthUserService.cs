@@ -8,8 +8,8 @@ namespace RFE.Auth.Core.Interfaces.Services
     public interface IAuthUserService
     {
         Task<List<AuthUserByIdGetResponse>> GetAllRegisteredUsers();
-        
         Task<AuthUserByIdGetResponse> GetUserById(int id);
-        Task<bool> AddNewAuthUser(UnconfirmedAuthUser authUser);
+        Task AddNewAuthUser(AuthUser authUser);
+        Task<AuthUser> AuthenticateAuthUser(string username, string password);
     }
 }

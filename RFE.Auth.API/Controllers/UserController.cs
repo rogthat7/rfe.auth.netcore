@@ -95,25 +95,21 @@ namespace RFE.Auth.API.Controllers
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
-        [SwaggerRequestExample(typeof(UnconfirmedAuthUser), typeof(AddNewUserExample))]
+        [SwaggerRequestExample(typeof(AuthUser), typeof(AddNewUserExample))]
         // [Authorize]
         [HttpPost]
         public async Task<ActionResult<AuthUserByIdGetResponseDto>> AddAuthUser([FromBody] AuthUserAddPostRequestDto AuthUser)
         {
-            var model = _mapper.Map<UnconfirmedAuthUser>(AuthUser);
-            model.Password = EncryptionHelper.HashPassword(model.Password);
-            var authuser = await _authuserService.AddNewAuthUser(model);
-            if (authuser)
+            var model = _mapper.Map<AuthUser>(AuthUser);
+            model.Password = EncryptionHelper.EncodePasswordToBase64(model.Password);
+            await _authuserService.AddNewAuthUser(model);
+
+            return Ok(new AuthUserAddPostResponseDto()
             {
-                return Ok(new AuthUserAddPostResponseDto(){
-                    Message = "User Added Please Confirm via Email", 
-                    Status = "OK"
-                } );
-            }
-            else return Ok(new AuthUserAddPostResponseDto(){
-                    Message = "Error Adding a User", 
-                    Status = "Failed"
-                } );
+                Message = "New Auth User Added",
+                Status = "OK"
+            });
+
         }
         /// <summary>
         /// SendEmailTest
@@ -126,14 +122,14 @@ namespace RFE.Auth.API.Controllers
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status403Forbidden)]
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
-        [SwaggerRequestExample(typeof(Message), typeof(SendEmailModelExample))]
+        [SwaggerRequestExample(typeof(SendEmailDto), typeof(SendEmailModelExample))]
         // [Authorize]
-        [HttpPost("sendemail")]
-        public async Task<ActionResult> SendEmailTest([FromBody] Message emailMessage)
+        [HttpPost("sendconfirmationemail")]
+        public async Task<ActionResult> SendConfirmationEmail([FromBody] SendEmailDto sendEmailDto)
         {
-            await _emailSender.SendEmail(emailMessage);
-
-            return Ok();
+            var model = _mapper.Map<AuthUser>(sendEmailDto);
+            var message = await _emailSender.SendUserConfirmationEmail(null);
+            return Ok(message);
         }
     }
 }

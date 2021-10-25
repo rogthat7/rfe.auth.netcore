@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using RFE.Auth.API.Helpers;
 using RFE.Auth.API.Models;
 using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Interfaces.Services;
@@ -23,17 +24,17 @@ namespace RFE.Auth.API.Controllers
     [Route("api/v1/auth")]
     public class AuthController : ControllerBase
     {
-        private readonly IAuthService _authService;
+        private readonly IJwtAuthenticationService _JwtAuthService;
         private readonly IMapper _mapper;
         /// <summary>
         /// AuthController
         /// </summary>
         /// <param name="authService"></param>
         /// <param name="mapper"></param>
-        public AuthController(IAuthService authService, IMapper mapper)
+        public AuthController(IJwtAuthenticationService authService, IMapper mapper)
         {
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-            _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+            _JwtAuthService = authService ?? throw new ArgumentNullException(nameof(authService));
         }
         /// <summary>
         /// Authenticate
@@ -45,13 +46,15 @@ namespace RFE.Auth.API.Controllers
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [AllowAnonymous]
         [HttpPost("authenticate")]
-        public IActionResult Authenticate(AuthenticateRequest model)
+        public async Task<IActionResult> Authenticate(AuthenticateRequest model)
         {
-            var response = _authService.Authenticate(model);
+            model.Password = EncryptionHelper.EncodePasswordToBase64(model.Password);
+            var response = await _JwtAuthService.Authenticate(model);
 
             if (response == null)
-                return BadRequest(new { message = "Username or password is incorrect" });
+                return Unauthorized(new { message = "Username or password is incorrect" });
 
             return Ok(response);
         }

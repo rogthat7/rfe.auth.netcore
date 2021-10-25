@@ -4,16 +4,16 @@ namespace RFE.Auth.Core.Models.Auth
 {
     public class AuthenticateResponse
     {
-        public int Id { get; set; }
+        public int? Id { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string Username { get; set; }
-        public string Token { get; set; }
+        public Token Token { get; set; }
 
 
-        public AuthenticateResponse(AuthUser user, string token)
+        public AuthenticateResponse(AuthUser user, Token token)
         {
-            Id = user.Id;
+            Id = user.Id.Value;
             FirstName = user.FirstName;
             LastName = user.LastName;
             Username = user.Username;

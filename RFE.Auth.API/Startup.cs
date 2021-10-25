@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +12,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using RFE.Auth.API.Helpers;
 using RFE.Auth.API.Heplers;
@@ -62,8 +65,29 @@ namespace RFE.Auth.API
         {
             services.AddControllers();
             services.AddLogging();
-             //Add Swagger relates setting  
-            
+            services.Configure<CustomOptions>(Configuration.GetSection("CustomOptions"));
+
+            #region  JwtAuth Configuration
+            services.AddAuthentication(x =>
+            {
+                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(x => {
+                x.RequireHttpsMetadata = false;
+                x.SaveToken  = true;
+                x.TokenValidationParameters = new TokenValidationParameters {
+                    ValidateIssuerSigningKey  = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetValue<string>("JwtConfig:Secret"))),
+                    ValidateIssuer = false, // doubtful this should be false
+                    ValidateAudience = false, // doubtful this should be false
+                    RequireExpirationTime = false,
+                    ValidateLifetime = true
+                };
+            });
+            #endregion
+            //Add Swagger relates setting  
+
             services.AddSwaggerGen(c =>
             {
                     c.SwaggerDoc("v1", new OpenApiInfo{
@@ -86,7 +110,8 @@ namespace RFE.Auth.API
 
             #region  Add Services
                 services.AddScoped<IAuthService, AuthService>();
-                services.AddScoped<IAuthUserService, UserService>();
+                services.AddScoped<IAuthUserService, AuthUserService>();
+                services.AddScoped<IJwtAuthenticationService, JwtAuthenticationService>();
                 services.AddScoped<IEmailSender, EmailSender>();
             #endregion
 
@@ -96,14 +121,8 @@ namespace RFE.Auth.API
             
             #region  SqlServer Config Section
             
-            // var  server = Configuration.GetValue<string>("SQLServerDockerConfig:SQLServer");
-            // var  port = Configuration.GetValue<string>("SQLServerDockerConfig:SQLPort");
-            // var  database = Configuration.GetValue<string>("SQLServerDockerConfig:SQLDatabase");
-            // var  user = Configuration.GetValue<string>("SQLServerDockerConfig:SQLUser");
-            // var  password = Configuration.GetValue<string>("SQLServerDockerConfig:SQLPassword");
-            //services.AddDbContext<UserContext> (options => options.UseSqlServer($"Server={server},{port}; Initial Catalog={database};User ID={user};Password={password}"));
             services.AddDbContext<UserContext> (options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConection")));
-            // services.Configure<SQLServerDockerConfig>(Configuration.GetSection("SQLServerDockerConfig"));
+            
             #endregion
 
             // Auto Mapper Configurations
@@ -130,6 +149,7 @@ namespace RFE.Auth.API
 
             app.UseRouting();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>

@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Text;
 using MimeKit;
+using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Models.Email;
+using RFE.Auth.Core.Models.User;
 using Swashbuckle.AspNetCore.Filters;
 
 namespace RFE.Auth.API.Models.Examples
@@ -9,11 +11,19 @@ namespace RFE.Auth.API.Models.Examples
     /// <summary>
     /// SendEmailExample
     /// </summary>
-    public class SendEmailModelExample : IExamplesProvider<Message>
+    public class SendEmailModelExample : IExamplesProvider<SendEmailDto>
     {
-        Message IExamplesProvider<Message>.GetExamples()
+        SendEmailDto IExamplesProvider<SendEmailDto>.GetExamples()
         {
-            return new Message(new string[] {"iampokeman7@gmail.com"},"Test Email","This is Content for the email");
+            return  new SendEmailDto(){
+                    
+                    Email = "iampokeman7@gmail.com",
+                    FirstName = "Roger",
+                    LastName = "Fernandes",
+                    Password = "password",
+                    Phone = 1231231231,
+                    Username = "iampokeman7@gmail.com"
+            };
         }
         
     }

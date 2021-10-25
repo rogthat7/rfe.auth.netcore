@@ -7,7 +7,8 @@ namespace RFE.Auth.API.Models.User
      public UserMappingProfile() {
          // Add as many of these lines as you need to map your objects
         this.CreateMap<AuthUser, AppUserGetResponseDto>();
-        this.CreateMap<AuthUserAddPostRequestDto, UnconfirmedAuthUser>();
+        this.CreateMap<AuthUserAddPostRequestDto, AuthUser>();
+        this.CreateMap<SendEmailDto, AuthUser>();
      }
     }
 }
