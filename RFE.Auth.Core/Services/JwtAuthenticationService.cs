@@ -42,6 +42,7 @@ namespace RFE.Auth.Core.Services
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {
                     Subject = new ClaimsIdentity(new Claim[]{
+                        new Claim("role", "Admin"),
                         new Claim("userId", user.UserId.ToString()),
                         new Claim("userName", user.Username), 
                         new Claim("apps",JsonConvert.SerializeObject(appArray)),
