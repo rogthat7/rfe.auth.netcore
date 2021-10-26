@@ -3,9 +3,9 @@ using RFE.Auth.Core.Models.User;
 
 namespace RFE.Auth.API.Models.User
 {
-    public class AuthUserGetResponseDto : AuthenticateResponse
+    public class AuthUserAuthenticateResponseDto : AuthenticateResponse
     {
-        public AuthUserGetResponseDto(AuthUser user, Token token) : base(user, token)
+        public AuthUserAuthenticateResponseDto(AuthUser user, Token token) : base(user, token)
         {
         }
     }

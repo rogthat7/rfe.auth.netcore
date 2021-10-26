@@ -52,11 +52,11 @@ namespace RFE.Auth.API.Controllers
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
         // [Authorize]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<AuthUserGetResponseDto>>> GetAll()
+        public async Task<ActionResult<IEnumerable<AuthUserAuthenticateResponseDto>>> GetAll()
         {
             var authusers = await _authuserService.GetAllRegisteredUsers();
 
-            return Ok(new AppUserGetResponseDto(){
+            return Ok(new AuthUserGetResponseDto(){
                 Data = authusers, 
                 Status = "OK"
             } );
@@ -66,7 +66,7 @@ namespace RFE.Auth.API.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [ProducesResponseType(typeof(AuthUserGetResponseDto),StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(AuthUserAuthenticateResponseDto),StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status403Forbidden)]
