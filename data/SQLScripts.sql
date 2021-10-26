@@ -47,7 +47,7 @@ CREATE TABLE [AUTH].[UserAppPermission] (
 	CONSTRAINT FK_PermissionId FOREIGN KEY (PermissionId)
     REFERENCES [AUTH].[AppPermissions](PermissionId)
 )
-
+INSERT INTO [AUTH].[UserAppPermission] VALUES(1, 1, 1)
 select * into #temp from auth.AppUsers
 
 CREATE TABLE [AUTH].[AppUsers] (

@@ -16,15 +16,15 @@ namespace RFE.Auth.Core.Services
     public class EmailSender : IEmailSender
     {
         private readonly EmailConfiguration _emailConfig;
-        private readonly IOptions<CustomOptions> _options;
+        private readonly IOptions<JwtOptions> _jwtOptions;
         private readonly ILogger<EmailSender> _logger;
         private readonly string DEFAULT_USER_CONFIRMATION_SUBJECT = "DEFAULT_USER_CONFIRMATION_SUBJECT";
         private readonly string DEFAULT_USER_CONFIRMATION_BODY = "DEFAULT_USER_CONFIRMATION_BODY";
 
-        public EmailSender(EmailConfiguration emailConfig, ILogger<EmailSender> logger, IOptions<CustomOptions> options)
+        public EmailSender(EmailConfiguration emailConfig, ILogger<EmailSender> logger, IOptions<JwtOptions> jwtOptions)
         {
             _emailConfig = emailConfig ?? throw new ArgumentNullException(nameof(emailConfig));
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            _jwtOptions = jwtOptions ?? throw new ArgumentNullException(nameof(jwtOptions));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -75,7 +75,7 @@ namespace RFE.Auth.Core.Services
 
         public async Task<Message> GetUserConfirmationEmailMessage(AuthUser authUser)
         {
-            var myCustomOption = _options.Value.JwtKey;
+            var myCustomOption = _jwtOptions.Value.JwtKeyForEmail;
             var emailBody = $"<i>Click here to Confirm your Registration<i></br>";
             Message message = new Message(new string[] {authUser.Email}, DEFAULT_USER_CONFIRMATION_SUBJECT,emailBody + DEFAULT_USER_CONFIRMATION_BODY ); 
             var emailMessage = CreateEmailMessage(message);

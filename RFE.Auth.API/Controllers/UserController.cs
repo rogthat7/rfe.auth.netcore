@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Mail;
 using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
@@ -21,10 +22,11 @@ namespace RFE.Auth.API.Controllers
     /// UserController
     /// </summary>
     [ApiController]
+    [Authorize]
     [Route("api/v1/user")]
     public class UserController : ControllerBase
     {
-        private readonly IAuthUserService _authuserService;
+        private readonly IUserService _authuserService;
         private readonly IMapper _mapper;
         private readonly IEmailSender _emailSender;
         /// <summary>
@@ -34,7 +36,7 @@ namespace RFE.Auth.API.Controllers
         /// <param name="authuserService"></param>
         /// <param name="mapper"></param>
         /// <param name="emailSender"></param>
-        public UserController(IAuthService authService, IAuthUserService authuserService, IMapper mapper, IEmailSender emailSender)
+        public UserController(IAuthService authService, IUserService authuserService, IMapper mapper, IEmailSender emailSender)
         {
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));

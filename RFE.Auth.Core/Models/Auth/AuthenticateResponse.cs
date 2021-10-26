@@ -13,7 +13,7 @@ namespace RFE.Auth.Core.Models.Auth
 
         public AuthenticateResponse(AuthUser user, Token token)
         {
-            Id = user.Id.Value;
+            Id = user.UserId.Value;
             FirstName = user.FirstName;
             LastName = user.LastName;
             Username = user.Username;

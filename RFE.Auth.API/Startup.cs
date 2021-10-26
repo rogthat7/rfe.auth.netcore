@@ -66,6 +66,7 @@ namespace RFE.Auth.API
             services.AddControllers();
             services.AddLogging();
             services.Configure<CustomOptions>(Configuration.GetSection("CustomOptions"));
+            services.Configure<JwtOptions>(Configuration.GetSection("JwtConfig"));
 
             #region  JwtAuth Configuration
             services.AddAuthentication(x =>
@@ -82,19 +83,47 @@ namespace RFE.Auth.API
                     ValidateIssuer = false, // doubtful this should be false
                     ValidateAudience = false, // doubtful this should be false
                     RequireExpirationTime = false,
-                    ValidateLifetime = true
+                    ValidateLifetime = true,
+                    ValidIssuer =  Configuration["JwtConfig:Issuer"]
                 };
             });
-            #endregion
-            //Add Swagger relates setting  
+            
 
-            services.AddSwaggerGen(c =>
+            services.AddSwaggerGen(swagger =>
             {
-                    c.SwaggerDoc("v1", new OpenApiInfo{
+                    swagger.SwaggerDoc("v1", new OpenApiInfo
+                    {
+                        Version = "V1",
                         Title = "rfe.auth.api",
-                        Version = "V1"
+                        Description="ASP.NET Core 3.1 Web API" 
                     });
+                    // To Enable authorization using Swagger (JWT)  
+                swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()  
+                {  
+                    Name = "Authorization",  
+                    Type = SecuritySchemeType.Http,  
+                    Scheme = "Bearer",  
+                    BearerFormat = "JWT",  
+                    In = ParameterLocation.Header, 
+                    Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"JWT Token\"",  
+                }); 
+                swagger.AddSecurityRequirement(new OpenApiSecurityRequirement  
+                {  
+                    {  
+                          new OpenApiSecurityScheme  
+                            {  
+                                Reference = new OpenApiReference  
+                                {  
+                                    Type = ReferenceType.SecurityScheme,  
+                                    Id = "Bearer"  
+                                }  
+                            },  
+                            new string[] {}  
+  
+                    }  
+                });   
             });
+            #endregion
             services.AddScoped<IUnitOfWork, UnitOfWork>(serviceProvider =>
             {
                 var connectionString = Configuration.GetConnectionString("DefaultConection");
@@ -110,13 +139,14 @@ namespace RFE.Auth.API
 
             #region  Add Services
                 services.AddScoped<IAuthService, AuthService>();
-                services.AddScoped<IAuthUserService, AuthUserService>();
+                services.AddScoped<IUserService, UserService>();
                 services.AddScoped<IJwtAuthenticationService, JwtAuthenticationService>();
                 services.AddScoped<IEmailSender, EmailSender>();
             #endregion
 
             #region  Add Repositories
-                services.AddScoped<IAuthUserRepository, AuthUserRepository>();
+                services.AddScoped<IUserRepository, UserRepository>();
+                services.AddScoped<IAuthRepository, AuthRepository>();
             #endregion
             
             #region  SqlServer Config Section

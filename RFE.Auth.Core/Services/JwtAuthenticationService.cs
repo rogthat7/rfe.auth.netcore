@@ -1,11 +1,14 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using RFE.Auth.Core.Interfaces.Services;
 using RFE.Auth.Core.Models.Auth;
 using RFE.Auth.Core.Models.Shared;
@@ -15,28 +18,34 @@ namespace RFE.Auth.Core.Services
 {
     public class JwtAuthenticationService : IJwtAuthenticationService
     {
-        private readonly IAuthUserService _userService;
-        private readonly IOptions<CustomOptions> _options;
+        private readonly IAuthService _authService;
+        private readonly IOptions<JwtOptions> _jwtOptions;
         private readonly ILogger<JwtAuthenticationService> _logger;
 
-        public JwtAuthenticationService(IAuthUserService userService, IOptions<CustomOptions> options, ILogger<JwtAuthenticationService> logger)
+        public JwtAuthenticationService(IAuthService authService, IOptions<JwtOptions> jwtOptions, ILogger<JwtAuthenticationService> logger)
         {
-            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
-            _options = options ?? throw new ArgumentNullException(nameof(options));
+            _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+            _jwtOptions = jwtOptions ?? throw new ArgumentNullException(nameof(jwtOptions));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
         public async Task<AuthenticateResponse> Authenticate(AuthenticateRequest authenticateRequest)
         {
-            var customOptionValues = _options.Value;
-            var user = await _userService.AuthenticateAuthUser(authenticateRequest.Username, authenticateRequest.Password);
+            var customOptionValues = _jwtOptions.Value;
+            var user = await _authService.AuthenticateAuthUser(authenticateRequest);
+            var userAppPermissions = await _authService.GetUserAppPermissions(user.UserId.Value);
             if (user != null)
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var tokenKey = Encoding.ASCII.GetBytes(customOptionValues.JwtKey);
+                var tokenKey = Encoding.ASCII.GetBytes(customOptionValues.Secret);
+                var appArray = userAppPermissions.Select(a => a.AppName).ToArray<string>();
+                var jtoken  = JToken.Parse(JsonConvert.SerializeObject(appArray));
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {
                     Subject = new ClaimsIdentity(new Claim[]{
-                        new Claim("userName", user.Username), new Claim("apps","Fish-Tracker")
+                        new Claim("userId", user.UserId.ToString()),
+                        new Claim("userName", user.Username), 
+                        new Claim("apps",JsonConvert.SerializeObject(appArray)),
+                        new Claim("issuer",  customOptionValues.Issuer)
                     }),
                     Expires = DateTime.UtcNow.AddMinutes(15),
                     SigningCredentials = new SigningCredentials(
