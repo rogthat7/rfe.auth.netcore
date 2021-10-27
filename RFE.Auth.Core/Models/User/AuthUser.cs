@@ -13,9 +13,7 @@ namespace RFE.Auth.Core.Models.User
         public string   Username    { get; set; }
         public string   Email       { get; set; }
         public long?    Phone       { get; set; }
-        [JsonIgnore]
         public virtual bool Confirmed { get; set; } = false;
-        [JsonIgnore]
         public virtual string Password { get; set; }
     }
 }

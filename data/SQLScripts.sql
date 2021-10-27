@@ -64,3 +64,14 @@ CREATE TABLE [AUTH].[AppUsers] (
 INSERT INTO [AUTH].[AppUsers]
 SELECT FirstName, LastName,	Username,	Email,	Password,	Phone,	Confirmed
 FROM #temp
+
+
+CREATE TABLE [AUTH].[Roles](
+	RoleId SMALLINT IDENTITY(1,1),
+	[Role] VARCHAR(100) UNIQUE,
+	PRIMARY KEY (RoleId)
+)
+
+INSERT INTO [AUTH].[Roles] VALUES('admin')
+INSERT INTO [AUTH].[Roles] VALUES('authUser')
+INSERT INTO [AUTH].[Roles] VALUES('appUser')

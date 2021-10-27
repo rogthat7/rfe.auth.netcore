@@ -48,7 +48,7 @@ namespace RFE.Auth.Core.Services
                         new Claim("apps",JsonConvert.SerializeObject(appArray)),
                         new Claim("issuer",  customOptionValues.Issuer)
                     }),
-                    Expires = DateTime.UtcNow.AddMinutes(15),
+                    Expires = DateTime.UtcNow.AddDays(1),
                     SigningCredentials = new SigningCredentials(
                             new SymmetricSecurityKey(tokenKey),
                             SecurityAlgorithms.HmacSha256Signature

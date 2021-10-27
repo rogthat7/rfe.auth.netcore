@@ -43,7 +43,7 @@ namespace RFE.Auth.Infrastructure.Repositories
             parameters.Add("@Password", entity.Password, dbType: DbType.String);
             parameters.Add("@Phone", entity.Phone, dbType: DbType.Int64);
             parameters.Add("@Confirmed", entity.Confirmed, dbType: DbType.Boolean);
-            var res = await ExecuteStoredProcedureCreateResult(SprAddNewUser, parameters);
+            await ExecuteStoredProcedureCreateResult(SprAddNewUser, parameters);
         }
         public async Task<List<AuthUserByIdGetResponse>> All()
         {

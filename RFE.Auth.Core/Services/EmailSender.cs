@@ -1,6 +1,7 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.IO;
+using System.Reflection;
 using System.Security.Authentication;
 using System.Security.Claims;
 using System.Text;
@@ -11,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MimeKit;
+using MimeKit.Utils;
 using Newtonsoft.Json;
 using RFE.Auth.Core.Interfaces.Services;
 using RFE.Auth.Core.Models.Email;
@@ -25,7 +27,6 @@ namespace RFE.Auth.Core.Services
         private readonly IOptions<JwtOptions> _jwtOptions;
         private readonly ILogger<EmailSender> _logger;
         private readonly string DEFAULT_USER_CONFIRMATION_SUBJECT = "DEFAULT_USER_CONFIRMATION_SUBJECT";
-        private readonly string DEFAULT_USER_CONFIRMATION_BODY = "DEFAULT_USER_CONFIRMATION_BODY";
 
         public EmailSender(EmailConfiguration emailConfig, ILogger<EmailSender> logger, IOptions<JwtOptions> jwtOptions)
         {
@@ -82,11 +83,33 @@ namespace RFE.Auth.Core.Services
         public async Task<MimeMessage> GetUserConfirmationEmailMessage(AuthUser authUser)
         {
             var key = _jwtOptions.Value.JwtKeyForEmail;
+            var htmlBody = await GetEmailBody(authUser);
+            var builder = new BodyBuilder();
+            #region Processing Images ToDo
+            var image1 = builder.LinkedResources.Add ("Resources/images/image-1.png");
+            var image2 = builder.LinkedResources.Add ("Resources/images/image-2.png");
+            var image3 = builder.LinkedResources.Add ("Resources/images/image-3.png");
+            var image4 = builder.LinkedResources.Add ("Resources/images/image-4.png");
+            var image5 = builder.LinkedResources.Add ("Resources/images/image-5.png");
+            var image6 = builder.LinkedResources.Add ("Resources/images/image-6.png");
 
-            var emailBody = await GetEmailBody(authUser);
-            Message message = new Message(new string[] {authUser.Email}, DEFAULT_USER_CONFIRMATION_SUBJECT,emailBody + DEFAULT_USER_CONFIRMATION_BODY ); 
+            image1.ContentId = MimeUtils.GenerateMessageId ();
+            image2.ContentId = MimeUtils.GenerateMessageId ();
+            image3.ContentId = MimeUtils.GenerateMessageId ();
+            image4.ContentId = MimeUtils.GenerateMessageId ();
+            image5.ContentId = MimeUtils.GenerateMessageId ();
+            image6.ContentId = MimeUtils.GenerateMessageId ();
+            htmlBody = htmlBody.Replace("images/image-1.png",$"\"cid: {image1.ContentId}\"");
+            htmlBody = htmlBody.Replace("images/image-2.png",$"\"cid: {image2.ContentId}\"");
+            htmlBody = htmlBody.Replace("images/image-3.png",$"\"cid: {image3.ContentId}\"");
+            htmlBody = htmlBody.Replace("images/image-4.png",$"\"cid: {image4.ContentId}\"");
+            htmlBody = htmlBody.Replace("images/image-5.png",$"\"cid: {image5.ContentId}\"");
+            htmlBody = htmlBody.Replace("images/image-6.png",$"\"cid: {image6.ContentId}\"");
+            #endregion
+            builder.HtmlBody = htmlBody; 
+            Message message = new Message(new string[] {authUser.Email}, DEFAULT_USER_CONFIRMATION_SUBJECT, builder.HtmlBody ); 
             var emailMessage = CreateEmailMessage(message);
-            return null;//await Send(emailMessage);
+            return emailMessage;
         }
 
         private async Task<string> GetEmailBody(AuthUser authUser)
@@ -103,29 +126,14 @@ namespace RFE.Auth.Core.Services
                 null,
                 claims,
                 DateTime.UtcNow,
-                expires:DateTime.UtcNow.AddMinutes(15),
+                expires:DateTime.UtcNow.AddDays(1),// ToDo -- Change to 15 mins 
                 signingCredentials:credentials
             );
             var jwtPayLoad = new JwtSecurityTokenHandler().WriteToken(token);
-            var strHtml = await ReadAllTextAsync("./Resources/email.html");
+            var strHtml = await File.ReadAllTextAsync("./Resources/email.html");
+            strHtml = strHtml.Replace("#username", authUser.FirstName);
+            strHtml = strHtml.Replace("#confirmationlink", $"https://localhost:5001/api/v1/user/confirmuserwithconfirmationlink?tokenPayload={jwtPayLoad}");
             return strHtml;
-            
-        }
-        public async Task<string> ReadAllTextAsync(string filePath)
-        {
-            int DefaultBufferSize = 4096;
-            FileOptions DefaultOptions = FileOptions.Asynchronous | FileOptions.SequentialScan;
-            using (var sourceStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read,
-            DefaultBufferSize, DefaultOptions))
-            {
-                var sb = new StringBuilder();
-                var buffer = new byte[0x1000];
-                var numRead = 0;
-
-                while ((numRead = await sourceStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
-                    sb.Append(Encoding.Unicode.GetString(buffer, 0, numRead));
-                return sb.ToString();
-            }
         }
     }
 }
