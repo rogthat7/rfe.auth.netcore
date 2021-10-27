@@ -7,4 +7,5 @@
   -- ![image](https://user-images.githubusercontent.com/26566374/139065752-10c10e2e-1b9a-470d-9f7e-2a081875f3b1.png)
   -- open docker-compose.yml in vscode, right click and say compose up 
   ![image](https://user-images.githubusercontent.com/26566374/139066132-b779035d-720f-416e-b9cf-6dea7a2082d3.png)
-
+run the following command to transfer db data into the sqlsever database
+docker run --rm --volumes-from ms-sql-server -v ${PWD}/data:/backup busybox tar xvf /backup/sqldata.tar 
