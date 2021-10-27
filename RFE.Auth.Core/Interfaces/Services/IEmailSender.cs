@@ -7,7 +7,7 @@ namespace RFE.Auth.Core.Interfaces.Services
 {
     public interface IEmailSender
     {
-       Task<bool> SendUserConfirmationEmail(Message message);
+       Task<bool> SendUserConfirmationEmail(AuthUser user);
         
     }
 }

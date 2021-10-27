@@ -1,11 +1,17 @@
 using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Security.Authentication;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using MimeKit;
+using Newtonsoft.Json;
 using RFE.Auth.Core.Interfaces.Services;
 using RFE.Auth.Core.Models.Email;
 using RFE.Auth.Core.Models.Shared;
@@ -67,20 +73,59 @@ namespace RFE.Auth.Core.Services
             return emailMessage;
         }
 
-        public async Task<bool> SendUserConfirmationEmail(Message message)
+        public async Task<bool> SendUserConfirmationEmail(AuthUser authUser)
         {
-            var emailMessage = CreateEmailMessage(message);
+            var emailMessage = await  GetUserConfirmationEmailMessage(authUser);
             return await Send(emailMessage);
         }
 
-        public async Task<Message> GetUserConfirmationEmailMessage(AuthUser authUser)
+        public async Task<MimeMessage> GetUserConfirmationEmailMessage(AuthUser authUser)
         {
-            var myCustomOption = _jwtOptions.Value.JwtKeyForEmail;
-            var emailBody = $"<i>Click here to Confirm your Registration<i></br>";
+            var key = _jwtOptions.Value.JwtKeyForEmail;
+
+            var emailBody = await GetEmailBody(authUser);
             Message message = new Message(new string[] {authUser.Email}, DEFAULT_USER_CONFIRMATION_SUBJECT,emailBody + DEFAULT_USER_CONFIRMATION_BODY ); 
             var emailMessage = CreateEmailMessage(message);
             return null;//await Send(emailMessage);
         }
 
+        private async Task<string> GetEmailBody(AuthUser authUser)
+        {
+            var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_jwtOptions.Value.JwtKeyForEmail));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
+
+            var claims = new[] {
+                new Claim("payload",JsonConvert.SerializeObject(authUser)),
+                
+            };
+            var token = new JwtSecurityToken(
+                _jwtOptions.Value.Issuer,
+                null,
+                claims,
+                DateTime.UtcNow,
+                expires:DateTime.UtcNow.AddMinutes(15),
+                signingCredentials:credentials
+            );
+            var jwtPayLoad = new JwtSecurityTokenHandler().WriteToken(token);
+            var strHtml = await ReadAllTextAsync("./Resources/email.html");
+            return strHtml;
+            
+        }
+        public async Task<string> ReadAllTextAsync(string filePath)
+        {
+            int DefaultBufferSize = 4096;
+            FileOptions DefaultOptions = FileOptions.Asynchronous | FileOptions.SequentialScan;
+            using (var sourceStream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.Read,
+            DefaultBufferSize, DefaultOptions))
+            {
+                var sb = new StringBuilder();
+                var buffer = new byte[0x1000];
+                var numRead = 0;
+
+                while ((numRead = await sourceStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+                    sb.Append(Encoding.Unicode.GetString(buffer, 0, numRead));
+                return sb.ToString();
+            }
+        }
     }
 }

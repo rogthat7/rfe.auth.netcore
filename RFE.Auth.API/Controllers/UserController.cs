@@ -130,7 +130,7 @@ namespace RFE.Auth.API.Controllers
         public async Task<ActionResult> SendConfirmationEmail([FromBody] SendEmailDto sendEmailDto)
         {
             var model = _mapper.Map<AuthUser>(sendEmailDto);
-            var message = await _emailSender.SendUserConfirmationEmail(null);
+            var message = await _emailSender.SendUserConfirmationEmail(model);
             return Ok(message);
         }
     }
