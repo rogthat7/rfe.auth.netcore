@@ -2,7 +2,7 @@ using System;
 using System.Data;
 using System.Threading.Tasks;
 
-namespace RFE.Auth.Core.Interfaces.Repositories.Shared
+namespace RFE.Auth.Core.Interfaces.Shared
 {
     public interface IUnitOfWork  : IDisposable
     {

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RFE.Auth.Core.Interfaces.Repositories.Shared;
+using RFE.Auth.Core.Interfaces.Shared;
 
 namespace RFE.Auth.Infrastructure.Repositories.Shared
 {

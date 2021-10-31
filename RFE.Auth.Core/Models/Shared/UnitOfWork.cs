@@ -1,7 +1,6 @@
 using System.Data;
 using System.Data.SqlClient;
-using System.Threading.Tasks;
-using RFE.Auth.Core.Interfaces.Repositories.Shared;
+using RFE.Auth.Core.Interfaces.Shared;
 
 namespace RFE.Auth.Core.Models.Shared
 {

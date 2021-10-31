@@ -16,14 +16,11 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using RFE.Auth.API.Helpers;
 using RFE.Auth.API.Heplers;
-using RFE.Auth.API.Models;
 using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Interfaces.Repositories;
-using RFE.Auth.Core.Interfaces.Repositories.Shared;
 using RFE.Auth.Core.Interfaces.Services;
-using RFE.Auth.Core.Models;
+using RFE.Auth.Core.Interfaces.Shared;
 using RFE.Auth.Core.Models.Shared;
-using RFE.Auth.Core.Models.User;
 using RFE.Auth.Core.Services;
 using RFE.Auth.Infrastructure.Repositories;
 
@@ -91,12 +88,12 @@ namespace RFE.Auth.API
 
             services.AddSwaggerGen(swagger =>
             {
-                    swagger.SwaggerDoc("v1", new OpenApiInfo
-                    {
-                        Version = "V1",
-                        Title = "rfe.auth.api",
-                        Description="ASP.NET Core 3.1 Web API" 
-                    });
+                swagger.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Version = "V1",
+                    Title = "rfe.auth.api",
+                    Description="ASP.NET Core 3.1 Web API" 
+                });
                     // To Enable authorization using Swagger (JWT)  
                 swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()  
                 {  

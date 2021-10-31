@@ -19,6 +19,7 @@ namespace RFE.Auth.API.Controllers.Shared
 
         protected bool ValidateToken(JwtSecurityToken token) 
         {
+            //ToDo Verify with signiture
             bool issuerVerified = true;
             if (token.Issuer.CompareTo(_jwtOptions.Value.Issuer)!=0)
                 issuerVerified = false;

@@ -8,6 +8,7 @@ using Dapper;
 using Microsoft.Extensions.Logging;
 using RFE.Auth.Core.Interfaces.Repositories;
 using RFE.Auth.Core.Interfaces.Repositories.Shared;
+using RFE.Auth.Core.Interfaces.Shared;
 using RFE.Auth.Core.Models.User;
 using RFE.Auth.Infrastructure.Repositories.Shared;
 

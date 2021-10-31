@@ -6,6 +6,7 @@ using Dapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RFE.Auth.Core.Interfaces.Repositories.Shared;
+using RFE.Auth.Core.Interfaces.Shared;
 using RFE.Auth.Core.Models.Shared;
 using static Dapper.SqlMapper;
 
