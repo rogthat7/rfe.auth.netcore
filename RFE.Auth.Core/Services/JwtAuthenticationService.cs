@@ -32,6 +32,8 @@ namespace RFE.Auth.Core.Services
         {
             var customOptionValues = _jwtOptions.Value;
             var user = await _authService.AuthenticateAuthUser(authenticateRequest);
+            if(user==null)
+                return null;
             var userAppPermissions = await _authService.GetUserAppPermissions(user.UserId.Value);
             if (user != null)
             {

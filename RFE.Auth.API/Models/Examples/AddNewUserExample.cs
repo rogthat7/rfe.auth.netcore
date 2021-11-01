@@ -16,8 +16,6 @@ namespace RFE.Auth.API.Models.Examples
         {
             return new AuthUser{
                 Email = "iampokeman7@gmail.com",
-                FirstName = "Roger",
-                LastName = "Fernandes",
                 Phone = 8806329362,
                 Username = "iampokeman7@gmail.com",
                 Password = "Password",

@@ -131,7 +131,7 @@ namespace RFE.Auth.Core.Services
             );
             var jwtPayLoad = new JwtSecurityTokenHandler().WriteToken(token);
             var strHtml = await File.ReadAllTextAsync("./Resources/email.html");
-            strHtml = strHtml.Replace("#username", authUser.FirstName);
+            strHtml = strHtml.Replace("#username", authUser.Email);
             strHtml = strHtml.Replace("#confirmationlink", $"https://localhost:5001/api/v1/user/confirmuserwithconfirmationlink?tokenPayload={jwtPayLoad}");
             return strHtml;
         }

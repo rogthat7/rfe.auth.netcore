@@ -37,8 +37,6 @@ namespace RFE.Auth.Infrastructure.Repositories
             }
            
             var parameters = new DynamicParameters();
-            parameters.Add("@FirstName", entity.FirstName, dbType: DbType.String);
-            parameters.Add("@LastName", entity.LastName, dbType: DbType.String);
             parameters.Add("@Email", entity.Email, dbType: DbType.String);
             parameters.Add("@Username", entity.Username, dbType: DbType.String);
             parameters.Add("@Password", entity.Password, dbType: DbType.String);
@@ -95,8 +93,6 @@ namespace RFE.Auth.Infrastructure.Repositories
             }
            
             var parameters = new DynamicParameters();
-            parameters.Add("@FirstName", entity.FirstName, dbType: DbType.String);
-            parameters.Add("@LastName", entity.LastName, dbType: DbType.String);
             parameters.Add("@Email", entity.Email, dbType: DbType.String);
             parameters.Add("@Username", entity.Username, dbType: DbType.String);
             parameters.Add("@Phone", entity.Phone, dbType: DbType.Int64);

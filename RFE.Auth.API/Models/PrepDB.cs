@@ -31,9 +31,7 @@ namespace RFE.Auth.API.Models
                 userContext.AppUsers.AddRange(
                     new AuthUser() {
                         Email = "admin@fish-tracker.com",
-                        FirstName = "Admin",
                         Username = "admin@fish-tracker.com",
-                        LastName = "Fish-Tracker",
                         Password = HashPassword("admin"),
                         Confirmed = true,
                         Phone = 8806329362

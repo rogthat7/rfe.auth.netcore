@@ -172,7 +172,7 @@ namespace RFE.Auth.API
         
             else app.ConfigureExceptionHandler(logger);
             //PrepDB.PrepPopulation(app);
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
             app.UseRouting();
 
