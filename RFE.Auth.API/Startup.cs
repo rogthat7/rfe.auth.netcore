@@ -21,6 +21,7 @@ using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using RFE.Auth.API.Helpers;
 using RFE.Auth.API.Heplers;
+using RFE.Auth.API.Models;
 using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Interfaces.Repositories;
 using RFE.Auth.Core.Interfaces.Services;

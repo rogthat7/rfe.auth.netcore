@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using RFE.Auth.API.Helpers;
 using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Models.User;
 
@@ -32,7 +33,7 @@ namespace RFE.Auth.API.Models
                     new AuthUser() {
                         Email = "admin@fish-tracker.com",
                         Username = "admin@fish-tracker.com",
-                        Password = HashPassword("admin"),
+                        Password = EncryptionHelper.EncodePasswordToBase64("admin"),
                         Confirmed = true,
                         Phone = 8806329362
                     }
