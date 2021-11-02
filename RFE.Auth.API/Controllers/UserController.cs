@@ -16,6 +16,7 @@ using RFE.Auth.API.Helpers;
 using RFE.Auth.API.Models.Examples;
 using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Interfaces.Services;
+using RFE.Auth.Core.Models.Auth;
 using RFE.Auth.Core.Models.Email;
 using RFE.Auth.Core.Models.Shared;
 using RFE.Auth.Core.Models.User;
@@ -27,11 +28,13 @@ namespace RFE.Auth.API.Controllers
     /// UserController
     /// </summary>
     [ApiController]
-    [Route("api/v1/user")]
+    [Route("api/auth/v1/[controller]")]
     public class UserController : BaseController 
     {
         private readonly IUserService _authuserService;
         private readonly IMapper _mapper;
+        private readonly IJwtAuthenticationService _JwtAuthService;
+
         private readonly IEmailSender _emailSender;
         /// <summary>
         /// AuthUserController
@@ -40,16 +43,40 @@ namespace RFE.Auth.API.Controllers
         /// <param name="authuserService"></param>
         /// <param name="mapper"></param>
         /// <param name="emailSender"></param>
-        public UserController(IAuthService authService, 
-                            IUserService authuserService, 
-                            IMapper mapper, 
-                            IEmailSender emailSender, 
-                            IOptions<JwtOptions> jwtoptions): base (jwtoptions)
+        public UserController(  IAuthService authService, 
+                                IUserService authuserService,
+                                IJwtAuthenticationService jwtAuthService, 
+                                IMapper mapper, 
+                                IEmailSender emailSender, 
+                                IOptions<JwtOptions> jwtoptions): base (jwtoptions)
         {
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
             _authuserService = authuserService ?? throw new ArgumentNullException(nameof(authuserService));
+            _JwtAuthService = jwtAuthService ?? throw new ArgumentNullException(nameof(jwtAuthService));
         } 
+        /// <summary>
+        /// Authenticate
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [AllowAnonymous]
+        [HttpPost("authenticate")]
+        public async Task<IActionResult> Authenticate(AuthenticateRequest model)
+        {
+            model.Password = EncryptionHelper.EncodePasswordToBase64(model.Password);
+            var response = await _JwtAuthService.Authenticate(model);
+
+            if (response == null)
+                return Unauthorized(new { message = "Username or password is incorrect" });
+
+            return Ok(response);
+        }
         /// <summary>
         /// GetAll Users
         /// </summary>

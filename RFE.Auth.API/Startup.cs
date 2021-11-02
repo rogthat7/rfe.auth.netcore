@@ -7,13 +7,18 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.Versioning;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
 using RFE.Auth.API.Helpers;
 using RFE.Auth.API.Heplers;
 using RFE.Auth.API.Models.User;
@@ -64,6 +69,20 @@ namespace RFE.Auth.API
             services.AddLogging();
             services.Configure<CustomOptions>(Configuration.GetSection("CustomOptions"));
             services.Configure<JwtOptions>(Configuration.GetSection("JwtConfig"));
+            services.Configure<ApiInfo>(Configuration.GetSection("ApiInfo"));
+
+            // This method gets called by the runtime. Use this method to add services to the container.
+            services.AddMvc(options => {
+                options.EnableEndpointRouting = false;
+            });
+            // services.AddApiVersioning(options =>
+            // {
+            //     options.ReportApiVersions = true;
+            //     options.AssumeDefaultVersionWhenUnspecified = true;
+            // });
+
+            // services.AddSingleton<IConfigureOptions<ApiVersioningOptions>, ConfigureApiVersioningOptions>();
+
 
             #region  JwtAuth Configuration
             services.AddAuthentication(x =>
@@ -146,7 +165,7 @@ namespace RFE.Auth.API
                 services.AddScoped<IAuthRepository, AuthRepository>();
             #endregion
             
-            #region  SqlServer Config Section
+            #region  SqlServer DBContext Section
             
             services.AddDbContext<UserContext> (options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConection")));
             
@@ -162,7 +181,7 @@ namespace RFE.Auth.API
         /// <param name="app"></param>
         /// <param name="env"></param>
         /// <param name="logger"></param>
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger, IOptions<ApiInfo> _apiInfo)
         {
             if (env.IsDevelopment())
             {
@@ -175,19 +194,28 @@ namespace RFE.Auth.API
             //app.UseHttpsRedirection();
 
             app.UseRouting();
-
+            app.UseCors();
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseMvc();
 
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapControllers();
-            });
             app.UseSwagger();    
             app.UseSwaggerUI(c =>    
             {    
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Common Auth API");    
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "V1");    
             }); 
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                endpoints.MapGet("/", async context => {
+                   await context.Response.WriteAsync(JsonConvert.SerializeObject(new ApiInfo{
+                        apiName = _apiInfo.Value.apiName,
+                        basePath = context.Request.Scheme+"://"+context.Request.Host + _apiInfo.Value.basePath,
+                        apiDocumentation = context.Request.Scheme+"://"+context.Request.Host + _apiInfo.Value.apiDocumentation,
+                        version = _apiInfo.Value.version
+                   }));
+                });
+            });
         }
     }
 }

@@ -22,5 +22,6 @@ namespace RFE.Auth.API
                 {
                     webBuilder.UseStartup<Startup>();
                 });
+                
     }
 }
