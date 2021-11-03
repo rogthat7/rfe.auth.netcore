@@ -30,7 +30,7 @@ namespace RFE.Auth.Core.Services
 
         public async Task AddNewAuthUser(AuthUser confirmedUser)
         {
-            await _userRepository.AddNewConfirmedUser(confirmedUser);
+            await _userRepository.AddNewAuthUser(confirmedUser);
         }
 
         public async Task<List<AuthUserByIdGetResponse>> GetAllRegisteredUsers()

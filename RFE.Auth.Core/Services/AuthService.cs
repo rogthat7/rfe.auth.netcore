@@ -21,7 +21,7 @@ namespace RFE.Auth.Core.Services
             return await _authRepository.AuthenticateAuthUser(authenticateRequestModel.Username, authenticateRequestModel.Password) as AuthUser;
         }
 
-        public async  Task<List<UserAppPermission>> GetUserAppPermissions(int? UserId)
+        public async  Task<List<UserAppPermissionResponse>> GetUserAppPermissions(int? UserId)
         {
              return await _authRepository.GetUserAppPermissionsByUserId(UserId) ;
         }

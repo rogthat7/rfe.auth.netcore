@@ -192,7 +192,6 @@ namespace RFE.Auth.API.Controllers
                 return BadRequest("Invalid Token, Please Register Again");
             var payload = jwtSecurityToken.Payload.First(data => data.Key == "payload").Value;
             var model = JsonConvert.DeserializeObject<AuthUser>(payload.ToString());
-            model.Confirmed = true;
             await _authuserService.AddNewAuthUser(model);
 
             return Ok(new AuthUserAddPostResponseDto()

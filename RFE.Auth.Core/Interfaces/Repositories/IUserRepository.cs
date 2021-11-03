@@ -18,7 +18,7 @@ namespace RFE.Auth.Core.Interfaces.Repositories
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        Task AddNewConfirmedUser(AuthUser entity);
+        Task AddNewAuthUser(AuthUser entity);
         Task<bool> DeleteById(int? id);
         Task<bool> Upsert(AuthUser entity);
     }

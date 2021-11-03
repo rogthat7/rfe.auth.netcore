@@ -17,7 +17,7 @@ namespace RFE.Auth.Infrastructure.Repositories
     public class AuthRepository: RepositoryBase, IAuthRepository
     {
 
-        private const string SprAuthenticataAuthUser = "AUTH.spr_AuthenticataAuthUser";
+        private const string SprAuthenticateAuthUser = "AUTH.spr_AuthenticateAuthUser";
         private const string SprGetUserAppPermissions = "AUTH.spr_GetUserAppPermissions";
 
         public AuthRepository(IUnitOfWork unitOfWork) : base(unitOfWork)
@@ -29,17 +29,17 @@ namespace RFE.Auth.Infrastructure.Repositories
             var parameters = new DynamicParameters();
             parameters.Add("@Username", username, dbType: DbType.String);
             parameters.Add("@Password", password, dbType: DbType.String);
-            var res = await ExecuteStoredProcedureListResult<AuthUser>(SprAuthenticataAuthUser, parameters);
+            var res = await ExecuteStoredProcedureListResult<AuthUser>(SprAuthenticateAuthUser, parameters);
             if (res.Response.Count()<=0)
                 return null;
             else return res.Response.FirstOrDefault();
         }
 
-        public async Task<List<UserAppPermission>> GetUserAppPermissionsByUserId(int? userId)
+        public async Task<List<UserAppPermissionResponse>> GetUserAppPermissionsByUserId(int? userId)
         {
             var parameters = new DynamicParameters();
             parameters.Add("@UserId", userId, dbType: DbType.Int64);
-            var res = await ExecuteStoredProcedureListResult<UserAppPermission>(SprGetUserAppPermissions, parameters);
+            var res = await ExecuteStoredProcedureListResult<UserAppPermissionResponse>(SprGetUserAppPermissions, parameters);
             if (res.Response.Count()<=0)
                 return null;
             else return res.Response.AsList();

@@ -18,8 +18,7 @@ namespace RFE.Auth.API.Models.Examples
                 Email = "iampokeman7@gmail.com",
                 Phone = 8806329362,
                 Username = "iampokeman7@gmail.com",
-                Password = "Password",
-                Confirmed = true
+                Password = "Password"
             };
         }
         

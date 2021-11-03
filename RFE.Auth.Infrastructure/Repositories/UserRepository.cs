@@ -21,15 +21,15 @@ namespace RFE.Auth.Infrastructure.Repositories
         private const string SprGetUnconfirmedUserById = "AUTH.spr_GetUserById";
         private const string SprUpdateAuthUser = "AUTH.spr_UpdateAuthUser";
         private const string SprDeleteUserById = "AUTH.spr_DeleteUserById";
-        private const string SprAuthenticataAuthUser = "AUTH.spr_AuthenticataAuthUser";
-        private const string SprAddNewUser = "AUTH.spr_AddNewUser";
+        private const string SprAuthenticateAuthUser = "AUTH.spr_AuthenticateAuthUser";
+        private const string SprAddAuthNewUser = "AUTH.spr_AddNewAuthUser";
 
         public UserRepository(IUnitOfWork unitOfWork) : base(unitOfWork)
         {
             
         }
 
-        public async Task AddNewConfirmedUser(AuthUser entity)
+        public async Task AddNewAuthUser(AuthUser entity)
         {
             if (entity is null)
             {
@@ -41,8 +41,7 @@ namespace RFE.Auth.Infrastructure.Repositories
             parameters.Add("@Username", entity.Username, dbType: DbType.String);
             parameters.Add("@Password", entity.Password, dbType: DbType.String);
             parameters.Add("@Phone", entity.Phone, dbType: DbType.Int64);
-            parameters.Add("@Confirmed", entity.Confirmed, dbType: DbType.Boolean);
-            await ExecuteStoredProcedureCreateResult(SprAddNewUser, parameters);
+            await ExecuteStoredProcedureCreateResult(SprAddAuthNewUser, parameters);
         }
         public async Task<List<AuthUserByIdGetResponse>> All()
         {
@@ -56,7 +55,7 @@ namespace RFE.Auth.Infrastructure.Repositories
             var parameters = new DynamicParameters();
             parameters.Add("@Username", username, dbType: DbType.String);
             parameters.Add("@Password", password, dbType: DbType.String);
-            var res = await ExecuteStoredProcedureListResult<AuthUser>(SprAuthenticataAuthUser, parameters);
+            var res = await ExecuteStoredProcedureListResult<AuthUser>(SprAuthenticateAuthUser, parameters);
             if (res.Response.Count()<=0)
                 return null;
             else return res.Response.FirstOrDefault();

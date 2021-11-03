@@ -8,6 +8,6 @@ namespace RFE.Auth.Core.Interfaces.Services
     public interface IAuthService
     {
         Task<AuthUser> AuthenticateAuthUser(AuthenticateRequest authenticateRequestModel);
-        Task<List<UserAppPermission>> GetUserAppPermissions(int? UserId);
+        Task<List<UserAppPermissionResponse>> GetUserAppPermissions(int? UserId);
     }
 }

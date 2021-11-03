@@ -168,7 +168,7 @@ namespace RFE.Auth.API
             
             #region  SqlServer DBContext Section
             
-            services.AddDbContext<UserContext> (options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConection")));
+            services.AddDbContext<DatabaseContext> (options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConection")));
             
             #endregion
 
@@ -191,7 +191,7 @@ namespace RFE.Auth.API
             }
         
             else app.ConfigureExceptionHandler(logger);
-            //PrepDB.PrepPopulation(app);
+            PrepDB.PrepPopulation(app);
             //app.UseHttpsRedirection();
 
             app.UseRouting();
