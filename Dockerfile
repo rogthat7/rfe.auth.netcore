@@ -14,5 +14,5 @@ FROM mcr.microsoft.com/dotnet/core/aspnet:3.1
 WORKDIR /app
 EXPOSE 80
 COPY --from=build-env /app/out .
-VOLUME [ "rfeauthnetcore_data:/var/opt/mssql/data/ " ]
+
 ENTRYPOINT [ "dotnet", "RFE.Auth.API.dll" ]

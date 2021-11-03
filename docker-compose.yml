@@ -12,12 +12,14 @@ services:
     volumes: 
       - data:/var/opt/mssql/data/
   rfe-auth-api:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     environment: 
       SQLServer: "ms-sql-server"
     container_name: rfe-auth-api
     ports: 
-      - "8080:80" 
+      - "80:80" 
 volumes:
   data: 
   # docker run --rm --volumes-from ms-sql-server -v ${PWD}/data:/backup busybox tar cvfz /backup/sqldata.tar var/opt/mssql/data/ 
