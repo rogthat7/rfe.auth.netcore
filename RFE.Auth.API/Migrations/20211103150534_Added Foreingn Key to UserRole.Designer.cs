@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RFE.Auth.API.Models.User;
 
 namespace RFE.Auth.API.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20211103150534_Added Foreingn Key to UserRole")]
+    partial class AddedForeingnKeytoUserRole
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -130,12 +132,6 @@ namespace RFE.Auth.API.Migrations
 
                     b.HasKey("UAPId");
 
-                    b.HasIndex("AppId");
-
-                    b.HasIndex("PermissionId");
-
-                    b.HasIndex("UserId");
-
                     b.ToTable("UserAppPermission", "AUTH");
                 });
 
@@ -160,33 +156,6 @@ namespace RFE.Auth.API.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserRole", "AUTH");
-                });
-
-            modelBuilder.Entity("RFE.Auth.Core.Models.User.UserAppPermission", b =>
-                {
-                    b.HasOne("RFE.Auth.Core.Models.App.Application", "Application")
-                        .WithMany()
-                        .HasForeignKey("AppId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("RFE.Auth.Core.Models.App.AppPermission", "AppPermission")
-                        .WithMany()
-                        .HasForeignKey("PermissionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("RFE.Auth.Core.Models.User.AuthUser", "AuthUser")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Application");
-
-                    b.Navigation("AppPermission");
-
-                    b.Navigation("AuthUser");
                 });
 
             modelBuilder.Entity("RFE.Auth.Core.Models.User.UserRole", b =>
