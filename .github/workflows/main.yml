@@ -10,8 +10,15 @@ jobs:
       - name: Checkout Latest Repo
         uses: actions/checkout@deploy
         
-      - name: Generate Deployment Package
-        run: zip -r deploy.zip * 
+      - name: Setup Dotnet
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.21
+      - name: Build With Dotnet
+        run: dotnet build -c release -o deploy
+        
+      - name: Generate Deployment Package  
+        run: zip -r deploy.zip ./deploy/* 
         
       - name: Get timestamp
         uses: gerred/actions/current-time@deploy
