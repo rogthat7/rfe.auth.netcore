@@ -7,6 +7,9 @@ jobs:
   deploy-on-aws:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Latest Repo
+        uses: actions/checkout@v2
+        
       - name: Setup Dotnet
         uses: actions/setup-dotnet@v1.8.2
         with:
@@ -16,9 +19,7 @@ jobs:
         
       - name: Generate Deployment Package  
         run: zip -r deploy.zip ./deploy/* 
-        
-      - name: Checkout Latest Repo
-        uses: actions/checkout@deploy 
+         
       - name: Get timestamp
         uses: gerred/actions/current-time@deploy
         id: current-time
