@@ -32,7 +32,7 @@ jobs:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRETE_ACCESS_KEY }}
           application_name: rfe.netcore.auth
-          environment_name: Rfenetcoreauth-env
+          environment_name: Rfenetcoreauth-env-1
           version_label: "rfe.netcore.auth-${{ steps.format-time.outputs.replaced }}"
           region: ap-south-1
           deployment_package: deploy.zip
