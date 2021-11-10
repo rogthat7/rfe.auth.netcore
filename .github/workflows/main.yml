@@ -8,24 +8,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Latest Repo
-        uses: actions/checkout@deploy
-        
-      - name: Setup Dotnet
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 3.1.21
-      - name: Build With Dotnet
-        run: dotnet build -c release -o deploy
+        uses: actions/checkout@master
         
       - name: Generate Deployment Package  
-        run: zip -r deploy.zip ./deploy/* 
-        
+        run: zip -r deploy.zip * 
+         
       - name: Get timestamp
-        uses: gerred/actions/current-time@deploy
+        uses: gerred/actions/current-time@master
         id: current-time
         
       - name: Run string replace
-        uses : frabert/replace-string-action@deploy
+        uses : frabert/replace-string-action@master
         id: format-time
         with: 
           pattern: '[:\.]'
@@ -39,7 +32,7 @@ jobs:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRETE_ACCESS_KEY }}
           application_name: rfe.netcore.auth
-          environment_name: Rfenetcoreauth-env
+          environment_name: Rfenetcoreauth-env-1
           version_label: "rfe.netcore.auth-${{ steps.format-time.outputs.replaced }}"
           region: ap-south-1
           deployment_package: deploy.zip
