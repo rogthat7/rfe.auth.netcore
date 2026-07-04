@@ -16,33 +16,34 @@ namespace RFE.Auth.Infrastructure.Repositories
 {
     public class AuthRepository: RepositoryBase, IAuthRepository
     {
-
-        private const string SprAuthenticateAuthUser = "AUTH.spr_AuthenticateAuthUser";
-        private const string SprGetUserAppPermissions = "AUTH.spr_GetUserAppPermissions";
-
         public AuthRepository(IUnitOfWork unitOfWork) : base(unitOfWork)
         {
             
         }
+
         public async Task<AuthUser> AuthenticateAuthUser(string username, string password)
         {
-            var parameters = new DynamicParameters();
-            parameters.Add("@Username", username, dbType: DbType.String);
-            parameters.Add("@Password", password, dbType: DbType.String);
-            var res = await ExecuteStoredProcedureListResult<AuthUser>(SprAuthenticateAuthUser, parameters);
-            if (res.Response.Count()<=0)
-                return null;
-            else return res.Response.FirstOrDefault();
+            const string sql = @"SELECT ""UserId"", ""Username"", ""Email"", ""Phone"", ""Password"" FROM ""AUTH"".""AuthUser"" WHERE ""Username"" = @Username AND ""Password"" = @Password";
+            var res = await _unitOfWork.DbConnection.QueryAsync<AuthUser>(sql, new { Username = username, Password = password });
+            return res.FirstOrDefault();
         }
 
         public async Task<List<UserAppPermissionResponse>> GetUserAppPermissionsByUserId(int? userId)
         {
-            var parameters = new DynamicParameters();
-            parameters.Add("@UserId", userId, dbType: DbType.Int64);
-            var res = await ExecuteStoredProcedureListResult<UserAppPermissionResponse>(SprGetUserAppPermissions, parameters);
-            if (res.Response.Count()<=0)
-                return null;
-            else return res.Response.AsList();
+            const string sql = @"
+                SELECT 
+                    uap.""UAPId"", 
+                    app.""AppName"", 
+                    usr.""Username"", 
+                    perm.""PermissionName"", 
+                    perm.""PermissionType""
+                FROM ""AUTH"".""UserAppPermission"" uap
+                INNER JOIN ""AUTH"".""Application"" app ON uap.""AppId"" = app.""AppId""
+                INNER JOIN ""AUTH"".""AuthUser"" usr ON uap.""UserId"" = usr.""UserId""
+                INNER JOIN ""AUTH"".""AppPermission"" perm ON uap.""PermissionId"" = perm.""PermissionId""
+                WHERE uap.""UserId"" = @UserId";
+            var res = await _unitOfWork.DbConnection.QueryAsync<UserAppPermissionResponse>(sql, new { UserId = userId });
+            return res.ToList();
         }
     }
 }

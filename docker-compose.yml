@@ -1,29 +1,31 @@
 version: '3.9'
 services:
-  ms-sql-server:
-    image: mcr.microsoft.com/mssql/server:2017-latest-ubuntu
-    container_name: ms-sql-server
+  db:
+    image: postgres:17-alpine
     environment:
-      ACCEPT_EULA: "Y"
-      SA_PASSWORD: "Pa55w0rd2021"
-      MSSQL_PID: Express
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: YourStrongPassword123!
+      POSTGRES_DB: rfe-glam
     ports:
-      - "1433:1433"
-    volumes: 
-      - data:/var/opt/mssql/data/
+      - "5432:5432"
+    volumes:
+      - auth_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d rfe-glam" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   rfe-auth-api:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
-    environment: 
-      SQLServer: "ms-sql-server"
     container_name: rfe-auth-api
-    ports: 
-      - "80:80" 
+    ports:
+      - "80:8080"
 volumes:
-  data: 
-  # Backup Data # docker run --rm --volumes-from ms-sql-server -v ${PWD}/data:/backup busybox tar cvfz /backup/sqldata.tar var/opt/mssql/data/  
-  # Restore Backup # docker run --rm --volumes-from ms-sql-server -v ${PWD}/data:/backup busybox tar xvf /backup/sqldata.tar 
-  # docker run -v rfeauthnetcore_data:/var/opt/mssql/data/ -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Pa55w0rd2021' -e 'MSSQL_PID=Express' -p 1433:1433 -d --name ms-sql-server  mcr.microsoft.com/mssql/server:2017-latest-ubuntu
+  auth_data:
+    # Backup Data # docker run --rm --volumes-from ms-sql-server -v ${PWD}/data:/backup busybox tar cvfz /backup/sqldata.tar var/opt/mssql/data/  
+    # Restore Backup # docker run --rm --volumes-from ms-sql-server -v ${PWD}/data:/backup busybox tar xvf /backup/sqldata.tar 
+    # docker run -v rfeauthnetcore_data:/var/opt/mssql/data/ -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=Pa55w0rd2021' -e 'MSSQL_PID=Express' -p 1433:1433 -d --name ms-sql-server  mcr.microsoft.com/mssql/server:2017-latest-ubuntu
 
 

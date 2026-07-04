@@ -14,7 +14,7 @@ namespace RFE.Auth.Infrastructure.Repositories.Shared
 {
     public class RepositoryBase
     {
-        private IUnitOfWork _unitOfWork;
+        protected readonly IUnitOfWork _unitOfWork;
 
         public RepositoryBase(IUnitOfWork unitOfWork) 
         {

@@ -1,5 +1,5 @@
 using System.Data;
-using System.Data.SqlClient;
+using Npgsql;
 using RFE.Auth.Core.Interfaces.Shared;
 
 namespace RFE.Auth.Core.Models.Shared
@@ -18,7 +18,7 @@ namespace RFE.Auth.Core.Models.Shared
             {
                 if (_dbConnection == null)
                 {
-                    _dbConnection = new SqlConnection(_dbConnectionString);
+                    _dbConnection = new NpgsqlConnection(_dbConnectionString);
                 }
                 return _dbConnection;
             }            

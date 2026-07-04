@@ -16,14 +16,6 @@ namespace RFE.Auth.Infrastructure.Repositories
 {
     public class UserRepository: RepositoryBase, IUserRepository
     {
-        private const string SprGetUsers = "AUTH.spr_GetAllUsers";
-        private const string SprGetUserById = "AUTH.spr_GetUserById";
-        private const string SprGetUnconfirmedUserById = "AUTH.spr_GetUserById";
-        private const string SprUpdateAuthUser = "AUTH.spr_UpdateAuthUser";
-        private const string SprDeleteUserById = "AUTH.spr_DeleteUserById";
-        private const string SprAuthenticateAuthUser = "AUTH.spr_AuthenticateAuthUser";
-        private const string SprAddAuthNewUser = "AUTH.spr_AddNewAuthUser";
-
         public UserRepository(IUnitOfWork unitOfWork) : base(unitOfWork)
         {
             
@@ -36,52 +28,40 @@ namespace RFE.Auth.Infrastructure.Repositories
                 throw new ArgumentNullException(nameof(entity));
             }
            
-            var parameters = new DynamicParameters();
-            parameters.Add("@Email", entity.Email, dbType: DbType.String);
-            parameters.Add("@Username", entity.Username, dbType: DbType.String);
-            parameters.Add("@Password", entity.Password, dbType: DbType.String);
-            parameters.Add("@Phone", entity.Phone, dbType: DbType.Int64);
-            await ExecuteStoredProcedureCreateResult(SprAddAuthNewUser, parameters);
+            const string sql = @"INSERT INTO ""AUTH"".""AuthUser"" (""Email"", ""Username"", ""Password"", ""Phone"") VALUES (@Email, @Username, @Password, @Phone)";
+            await _unitOfWork.DbConnection.ExecuteAsync(sql, new { entity.Email, entity.Username, entity.Password, entity.Phone });
         }
+
         public async Task<List<AuthUserByIdGetResponse>> All()
         {
-            var parameters = new DynamicParameters();
-            var res = await ExecuteStoredProcedureListResult<AuthUserByIdGetResponse>(SprGetUsers, parameters);
-            return res.Response as List<AuthUserByIdGetResponse>;
+            const string sql = @"SELECT ""UserId"", ""Username"", ""Email"", ""Phone"" FROM ""AUTH"".""AuthUser""";
+            var res = await _unitOfWork.DbConnection.QueryAsync<AuthUserByIdGetResponse>(sql);
+            return res.ToList();
         }
 
         public async Task<AuthUser> AuthenticateAuthUser(string username, string password)
         {
-            var parameters = new DynamicParameters();
-            parameters.Add("@Username", username, dbType: DbType.String);
-            parameters.Add("@Password", password, dbType: DbType.String);
-            var res = await ExecuteStoredProcedureListResult<AuthUser>(SprAuthenticateAuthUser, parameters);
-            if (res.Response.Count()<=0)
-                return null;
-            else return res.Response.FirstOrDefault();
+            const string sql = @"SELECT ""UserId"", ""Username"", ""Email"", ""Phone"", ""Password"" FROM ""AUTH"".""AuthUser"" WHERE ""Username"" = @Username AND ""Password"" = @Password";
+            var res = await _unitOfWork.DbConnection.QueryAsync<AuthUser>(sql, new { Username = username, Password = password });
+            return res.FirstOrDefault();
         }
 
         public async Task<bool> DeleteById(int? id)
         {
             if (id == null)
                 return false;
-            var parameters = new DynamicParameters();
-            parameters.Add("@Id", id, DbType.Int32);
-            var res = await ExecuteStoredProcedureUpdateDeleteResult(SprDeleteUserById, parameters);
-            if (res>0)
-                return true;
-            else
-                return false;
+            const string sql = @"DELETE FROM ""AUTH"".""AuthUser"" WHERE ""UserId"" = @Id";
+            var res = await _unitOfWork.DbConnection.ExecuteAsync(sql, new { Id = id });
+            return res > 0;
         }
 
         public async Task<AuthUserByIdGetResponse> GetById(int? id)
         {
             if(id == null)
                 return null;
-            var parameters = new DynamicParameters();
-            parameters.Add("@Id", id, DbType.Int32);
-            var res = await ExecuteStoredProcedureListResult<AuthUserByIdGetResponse>(SprGetUserById, parameters);
-            return res.Response.FirstOrDefault() as AuthUserByIdGetResponse;
+            const string sql = @"SELECT ""UserId"", ""Username"", ""Email"", ""Phone"" FROM ""AUTH"".""AuthUser"" WHERE ""UserId"" = @Id";
+            var res = await _unitOfWork.DbConnection.QueryAsync<AuthUserByIdGetResponse>(sql, new { Id = id });
+            return res.FirstOrDefault();
         }
 
         public async Task<bool> Upsert(AuthUser entity)
@@ -91,15 +71,9 @@ namespace RFE.Auth.Infrastructure.Repositories
                 throw new ArgumentNullException(nameof(entity));
             }
            
-            var parameters = new DynamicParameters();
-            parameters.Add("@Email", entity.Email, dbType: DbType.String);
-            parameters.Add("@Username", entity.Username, dbType: DbType.String);
-            parameters.Add("@Phone", entity.Phone, dbType: DbType.Int64);
-            var res = await ExecuteStoredProcedureUpdateDeleteResult(SprUpdateAuthUser, parameters);
-            if (res > 0)
-                return true;
-            else
-                return false;
+            const string sql = @"UPDATE ""AUTH"".""AuthUser"" SET ""Email"" = @Email, ""Phone"" = @Phone WHERE ""Username"" = @Username";
+            var res = await _unitOfWork.DbConnection.ExecuteAsync(sql, new { entity.Email, entity.Username, entity.Phone });
+            return res > 0;
         }
     }
 }

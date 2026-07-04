@@ -18,6 +18,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Scalar.AspNetCore;
 using Newtonsoft.Json;
 using RFE.Auth.API.Helpers;
 using RFE.Auth.API.Heplers;
@@ -112,7 +113,7 @@ namespace RFE.Auth.API
                 {
                     Version = "V1",
                     Title = "rfe.auth.api",
-                    Description="ASP.NET Core 3.1 Web API" 
+                    Description="ASP.NET Core 10.0 Web API" 
                 });
                     // To Enable authorization using Swagger (JWT)  
                 swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()  
@@ -166,9 +167,9 @@ namespace RFE.Auth.API
                 services.AddScoped<IAuthRepository, AuthRepository>();
             #endregion
             
-            #region  SqlServer DBContext Section
+            #region  PostgreSQL DBContext Section
             
-            services.AddDbContext<DatabaseContext> (options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConection")));
+            services.AddDbContext<DatabaseContext> (options => options.UseNpgsql(Configuration.GetConnectionString("DefaultConection")));
             
             #endregion
 
@@ -208,6 +209,10 @@ namespace RFE.Auth.API
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapScalarApiReference(options =>
+                {
+                    options.WithOpenApiRoutePattern("/swagger/v1/swagger.json");
+                });
                 endpoints.MapGet("/", async context => {
                    await context.Response.WriteAsync(JsonConvert.SerializeObject(new ApiInfo{
                         apiName = _apiInfo.Value.apiName,
