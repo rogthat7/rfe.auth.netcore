@@ -14,7 +14,7 @@ namespace RFE.Auth.API.Controllers.Shared
     [Controller]
     public class BaseController : ControllerBase
     {
-        private readonly IOptions<JwtOptions> _jwtOptions;
+        protected readonly IOptions<JwtOptions> _jwtOptions;
 
         public BaseController(IOptions<JwtOptions> jwtOptions)
         {

@@ -9,6 +9,7 @@ namespace RFE.Auth.API.Models.User
         this.CreateMap<AuthUser, AuthUserAuthenticateResponseDto>();
         this.CreateMap<AuthUserAddPostRequestDto, AuthUser>();
         this.CreateMap<SendEmailDto, AuthUser>();
+        this.CreateMap<SendPhoneDto, AuthUser>();
      }
     }
 }

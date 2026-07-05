@@ -10,6 +10,7 @@ namespace RFE.Auth.Core.Models.User
     [Serializable]
     [Index(nameof(Username), IsUnique = true)]
     [Index(nameof(Email), IsUnique = true)]
+    [Index(nameof(Phone), IsUnique = true)]
     [Table("AuthUser", Schema ="AUTH")]
     public class AuthUser
     {
@@ -18,7 +19,6 @@ namespace RFE.Auth.Core.Models.User
         public int?     UserId      { get; set; }
         [Required]
         public string   Username    { get; set; }
-        [Required]
         public string   Email       { get; set; }
         public long?    Phone       { get; set; }
         [Required]

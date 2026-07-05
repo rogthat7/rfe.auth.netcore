@@ -160,6 +160,7 @@ namespace RFE.Auth.API
                 services.AddScoped<IUserService, UserService>();
                 services.AddScoped<IJwtAuthenticationService, JwtAuthenticationService>();
                 services.AddScoped<IEmailSender, EmailSender>();
+                services.AddScoped<ISmsSender, SmsSender>();
             #endregion
 
             #region  Add Repositories
