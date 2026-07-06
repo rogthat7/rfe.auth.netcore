@@ -45,5 +45,16 @@ namespace RFE.Auth.Infrastructure.Repositories
             var res = await _unitOfWork.DbConnection.QueryAsync<UserAppPermissionResponse>(sql, new { UserId = userId });
             return res.ToList();
         }
+
+        public async Task<string?> GetUserRoleByUserId(int userId)
+        {
+            const string sql = @"
+                SELECT r.""RoleName"" 
+                FROM ""AUTH"".""UserRole"" ur
+                INNER JOIN ""AUTH"".""Roles"" r ON ur.""RoleId"" = r.""RoleId""
+                WHERE ur.""UserId"" = @UserId 
+                LIMIT 1";
+            return await _unitOfWork.DbConnection.QueryFirstOrDefaultAsync<string>(sql, new { UserId = userId });
+        }
     }
 }

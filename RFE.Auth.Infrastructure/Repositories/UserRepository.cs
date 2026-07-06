@@ -21,15 +21,58 @@ namespace RFE.Auth.Infrastructure.Repositories
             
         }
 
-        public async Task AddNewAuthUser(AuthUser entity)
+        public async Task AddNewAuthUser(AuthUser entity, string roleName)
         {
             if (entity is null)
             {
                 throw new ArgumentNullException(nameof(entity));
             }
            
-            const string sql = @"INSERT INTO ""AUTH"".""AuthUser"" (""Email"", ""Username"", ""Password"", ""Phone"") VALUES (@Email, @Username, @Password, @Phone)";
-            await _unitOfWork.DbConnection.ExecuteAsync(sql, new { entity.Email, entity.Username, entity.Password, entity.Phone });
+            const string sql = @"INSERT INTO ""AUTH"".""AuthUser"" (""Email"", ""Username"", ""Password"", ""Phone"") VALUES (@Email, @Username, @Password, @Phone) RETURNING ""UserId""";
+            var userId = await _unitOfWork.DbConnection.QuerySingleAsync<int>(sql, new { entity.Email, entity.Username, entity.Password, entity.Phone });
+
+            // Find the "rfe-glam" app ID
+            const string findAppSql = @"SELECT ""AppId"" FROM ""AUTH"".""Application"" WHERE ""AppName"" = 'rfe-glam'";
+            var appId = await _unitOfWork.DbConnection.QueryFirstOrDefaultAsync<int?>(findAppSql);
+
+            if (appId == null)
+            {
+                // Fallback: Create "rfe-glam" app dynamically if not present
+                const string insertAppSql = @"INSERT INTO ""AUTH"".""Application"" (""AppName"") VALUES ('rfe-glam') RETURNING ""AppId""";
+                appId = await _unitOfWork.DbConnection.QuerySingleAsync<int>(insertAppSql);
+            }
+
+            // Find the role ID by roleName
+            const string findRoleSql = @"SELECT ""RoleId"" FROM ""AUTH"".""Roles"" WHERE ""RoleName"" = @RoleName";
+            var roleId = await _unitOfWork.DbConnection.QueryFirstOrDefaultAsync<int?>(findRoleSql, new { RoleName = roleName });
+            if (roleId == null)
+            {
+                // If the role doesn't exist, fall back to "appUser"
+                roleId = await _unitOfWork.DbConnection.QueryFirstOrDefaultAsync<int?>(findRoleSql, new { RoleName = "appUser" });
+            }
+
+            if (roleId != null)
+            {
+                // Link user to role for rfe-glam app
+                const string insertUserRoleSql = @"INSERT INTO ""AUTH"".""UserRole"" (""UserId"", ""RoleId"", ""AppId"") VALUES (@UserId, @RoleId, @AppId)";
+                await _unitOfWork.DbConnection.ExecuteAsync(insertUserRoleSql, new { UserId = userId, RoleId = roleId.Value, AppId = appId.Value });
+            }
+
+            // Find default permission "modbase" or first available
+            const string findPermSql = @"SELECT ""PermissionId"" FROM ""AUTH"".""AppPermission"" WHERE ""PermissionName"" = 'modbase'";
+            var permId = await _unitOfWork.DbConnection.QueryFirstOrDefaultAsync<int?>(findPermSql);
+            if (permId == null)
+            {
+                const string findAnyPermSql = @"SELECT ""PermissionId"" FROM ""AUTH"".""AppPermission"" LIMIT 1";
+                permId = await _unitOfWork.DbConnection.QueryFirstOrDefaultAsync<int?>(findAnyPermSql);
+            }
+
+            if (permId != null)
+            {
+                // Insert User App Permission mapping
+                const string insertUserAppPermSql = @"INSERT INTO ""AUTH"".""UserAppPermission"" (""UserId"", ""AppId"", ""PermissionId"") VALUES (@UserId, @AppId, @PermissionId)";
+                await _unitOfWork.DbConnection.ExecuteAsync(insertUserAppPermSql, new { UserId = userId, AppId = appId.Value, PermissionId = permId.Value });
+            }
         }
 
         public async Task<List<AuthUserByIdGetResponse>> All()

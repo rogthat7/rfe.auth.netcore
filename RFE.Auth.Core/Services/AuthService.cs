@@ -25,5 +25,10 @@ namespace RFE.Auth.Core.Services
         {
              return await _authRepository.GetUserAppPermissionsByUserId(UserId) ;
         }
+
+        public async Task<string?> GetUserRoleAsync(int userId)
+        {
+            return await _authRepository.GetUserRoleByUserId(userId);
+        }
     }
 }

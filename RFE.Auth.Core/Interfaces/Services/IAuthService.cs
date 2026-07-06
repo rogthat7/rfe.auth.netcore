@@ -9,5 +9,6 @@ namespace RFE.Auth.Core.Interfaces.Services
     {
         Task<AuthUser> AuthenticateAuthUser(AuthenticateRequest authenticateRequestModel);
         Task<List<UserAppPermissionResponse>> GetUserAppPermissions(int? UserId);
+        Task<string?> GetUserRoleAsync(int userId);
     }
 }

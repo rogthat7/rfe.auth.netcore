@@ -143,7 +143,7 @@ namespace RFE.Auth.API.Controllers
         {
             var model = _mapper.Map<AuthUser>(AuthUser);
             model.Password = EncryptionHelper.EncodePasswordToBase64(model.Password);
-            await _authuserService.AddNewAuthUser(model);
+            await _authuserService.AddNewAuthUser(model, "appUser");
 
             return Ok(new AuthUserAddPostResponseDto()
             {
@@ -196,7 +196,7 @@ namespace RFE.Auth.API.Controllers
                 return BadRequest("Invalid Token, Please Register Again");
             var payload = jwtSecurityToken.Payload.First(data => data.Key == "payload").Value;
             var model = JsonConvert.DeserializeObject<AuthUser>(payload.ToString());
-            await _authuserService.AddNewAuthUser(model);
+            await _authuserService.AddNewAuthUser(model, "appUser");
 
             return Ok(new AuthUserAddPostResponseDto()
             {
@@ -233,7 +233,8 @@ namespace RFE.Auth.API.Controllers
 
             var claims = new[] {
                 new System.Security.Claims.Claim("payload", JsonConvert.SerializeObject(model)),
-                new System.Security.Claims.Claim("code", code)
+                new System.Security.Claims.Claim("code", code),
+                new System.Security.Claims.Claim("role", sendPhoneDto.Role ?? "appUser")
             };
             
             var token = new JwtSecurityToken(
@@ -311,8 +312,10 @@ namespace RFE.Auth.API.Controllers
                 return BadRequest("Invalid token content");
             }
 
+            var roleClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "role").Value?.ToString() ?? "appUser";
+
             var model = JsonConvert.DeserializeObject<AuthUser>(payloadClaim);
-            await _authuserService.AddNewAuthUser(model);
+            await _authuserService.AddNewAuthUser(model, roleClaim);
 
             return Ok(new AuthUserAddPostResponseDto()
             {

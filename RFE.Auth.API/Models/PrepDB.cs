@@ -28,62 +28,113 @@ namespace RFE.Auth.API.Models
             System.Console.WriteLine("Applying Migrations");
             databaseContext.Database.Migrate();
 
-            if(!(databaseContext.AuthUsers.Any() 
-                && databaseContext.Apps.Any() 
-                && databaseContext.Roles.Any() 
-                && databaseContext.UserRoles.Any()
-                && databaseContext.AppPermissions.Any()
-                && databaseContext.UserAppPermissions.Any() 
-                ))
+            System.Console.WriteLine("Adding Data - Seeding...");
+
+            // 1. Ensure Roles
+            var roleAppUser = databaseContext.Roles.FirstOrDefault(r => r.RoleName == "appUser") ?? new Roles { RoleName = "appUser" };
+            var roleAuthUser = databaseContext.Roles.FirstOrDefault(r => r.RoleName == "authUser") ?? new Roles { RoleName = "authUser" };
+            var roleLaborer = databaseContext.Roles.FirstOrDefault(r => r.RoleName == "Laborer") ?? new Roles { RoleName = "Laborer" };
+            var roleEmployer = databaseContext.Roles.FirstOrDefault(r => r.RoleName == "Employer") ?? new Roles { RoleName = "Employer" };
+            var rolePanchayat = databaseContext.Roles.FirstOrDefault(r => r.RoleName == "PanchayatAdmin") ?? new Roles { RoleName = "PanchayatAdmin" };
+            var roleAdmin = databaseContext.Roles.FirstOrDefault(r => r.RoleName == "Admin") ?? new Roles { RoleName = "Admin" };
+            
+            if (roleAppUser.RoleId == 0) databaseContext.Roles.Add(roleAppUser);
+            if (roleAuthUser.RoleId == 0) databaseContext.Roles.Add(roleAuthUser);
+            if (roleLaborer.RoleId == 0) databaseContext.Roles.Add(roleLaborer);
+            if (roleEmployer.RoleId == 0) databaseContext.Roles.Add(roleEmployer);
+            if (rolePanchayat.RoleId == 0) databaseContext.Roles.Add(rolePanchayat);
+            if (roleAdmin.RoleId == 0) databaseContext.Roles.Add(roleAdmin);
+            databaseContext.SaveChanges();
+
+            // 2. Ensure Applications
+            var appFish = databaseContext.Apps.FirstOrDefault(a => a.AppName == "fish-tracker") ?? new Application { AppName = "fish-tracker" };
+            var appGlam = databaseContext.Apps.FirstOrDefault(a => a.AppName == "rfe-glam") ?? new Application { AppName = "rfe-glam" };
+            if (appFish.AppId == 0) databaseContext.Apps.Add(appFish);
+            if (appGlam.AppId == 0) databaseContext.Apps.Add(appGlam);
+            databaseContext.SaveChanges();
+
+            // 3. Ensure AuthUsers
+            var userFishAdmin = databaseContext.AuthUsers.FirstOrDefault(u => u.Phone == 8806329362) ?? new AuthUser {
+                Email = "admin@fish-tracker.com",
+                Username = "admin@fish-tracker.com",
+                Password = EncryptionHelper.EncodePasswordToBase64("admin"),
+                Phone = 8806329362
+            };
+            var userEmployer = databaseContext.AuthUsers.FirstOrDefault(u => u.Phone == 9876543210) ?? new AuthUser {
+                Email = "employer@glam.com",
+                Username = "9876543210",
+                Password = EncryptionHelper.EncodePasswordToBase64("hashed"),
+                Phone = 9876543210
+            };
+            var userLaborer = databaseContext.AuthUsers.FirstOrDefault(u => u.Phone == 9876543211) ?? new AuthUser {
+                Email = "laborer@glam.com",
+                Username = "9876543211",
+                Password = EncryptionHelper.EncodePasswordToBase64("hashed"),
+                Phone = 9876543211
+            };
+            var userPanchayat = databaseContext.AuthUsers.FirstOrDefault(u => u.Phone == 9876543212) ?? new AuthUser {
+                Email = "panchayat@glam.com",
+                Username = "9876543212",
+                Password = EncryptionHelper.EncodePasswordToBase64("hashed"),
+                Phone = 9876543212
+            };
+            var userAdmin = databaseContext.AuthUsers.FirstOrDefault(u => u.Phone == 9876543213) ?? new AuthUser {
+                Email = "admin@glam.com",
+                Username = "9876543213",
+                Password = EncryptionHelper.EncodePasswordToBase64("hashed"),
+                Phone = 9876543213
+            };
+
+            if (userFishAdmin.UserId == null) databaseContext.AuthUsers.Add(userFishAdmin);
+            if (userEmployer.UserId == null) databaseContext.AuthUsers.Add(userEmployer);
+            if (userLaborer.UserId == null) databaseContext.AuthUsers.Add(userLaborer);
+            if (userPanchayat.UserId == null) databaseContext.AuthUsers.Add(userPanchayat);
+            if (userAdmin.UserId == null) databaseContext.AuthUsers.Add(userAdmin);
+            databaseContext.SaveChanges();
+
+            // 4. Ensure UserRoles
+            var mappings = new[] {
+                (userFishAdmin.UserId, roleAppUser.RoleId, appFish.AppId),
+                (userEmployer.UserId, roleEmployer.RoleId, appGlam.AppId),
+                (userLaborer.UserId, roleLaborer.RoleId, appGlam.AppId),
+                (userPanchayat.UserId, rolePanchayat.RoleId, appGlam.AppId),
+                (userAdmin.UserId, roleAdmin.RoleId, appGlam.AppId),
+            };
+
+            foreach (var (uId, rId, aId) in mappings)
             {
-                System.Console.WriteLine("Adding Data - Seeding...");
-                databaseContext.AuthUsers.AddRange(
-                    new AuthUser() {
-                        Email = "admin@fish-tracker.com",
-                        Username = "admin@fish-tracker.com",
-                        Password = EncryptionHelper.EncodePasswordToBase64("admin"),
-                        Phone = 8806329362
-                    }
-                );
-                databaseContext.Apps.AddRange(
-                    new Application() {
-                        AppName = "fish-tracker"
-                    }
-                );
-                databaseContext.Roles.AddRange(
-                    new Roles() {
-                        RoleName = "appUser"
-                    },
-                    new Roles() {
-                        RoleName = "authUser"
-                    }
-                );
-                databaseContext.UserRoles.AddRange(
-                    new UserRole() {
-                        AppId = 1,
-                        RoleId = 1,
-                        UserId = 1
-                    }
-                );
-                databaseContext.AppPermissions.AddRange(
-                    new AppPermission() {
-                        PermissionName = "modbase",
-                        PermissionType = "BASIC"
-                    }
-                );
-                databaseContext.UserAppPermissions.AddRange(
-                    new UserAppPermission() {
-                        UserId = 1,
-                        AppId = 1,
-                        PermissionId = 1
-                    }
-                );
-                databaseContext.SaveChanges();
+                if (uId != null && !databaseContext.UserRoles.Any(ur => ur.UserId == uId.Value && ur.RoleId == rId && ur.AppId == aId))
+                {
+                    databaseContext.UserRoles.Add(new UserRole { UserId = uId.Value, RoleId = rId, AppId = aId });
+                }
             }
-            else
+            databaseContext.SaveChanges();
+
+            // 5. Ensure AppPermission
+            var permBase = databaseContext.AppPermissions.FirstOrDefault(p => p.PermissionName == "modbase") ?? new AppPermission {
+                PermissionName = "modbase",
+                PermissionType = "BASIC"
+            };
+            if (permBase.PermissionId == 0) databaseContext.AppPermissions.Add(permBase);
+            databaseContext.SaveChanges();
+
+            // 6. Ensure UserAppPermission
+            var appPerms = new[] {
+                (userFishAdmin.UserId, appFish.AppId),
+                (userEmployer.UserId, appGlam.AppId),
+                (userLaborer.UserId, appGlam.AppId),
+                (userPanchayat.UserId, appGlam.AppId),
+                (userAdmin.UserId, appGlam.AppId),
+            };
+
+            foreach (var (uId, aId) in appPerms)
             {
-                System.Console.WriteLine("Already Has Data - Not Seeding");                
+                if (uId != null && !databaseContext.UserAppPermissions.Any(uap => uap.UserId == uId.Value && uap.AppId == aId && uap.PermissionId == permBase.PermissionId))
+                {
+                    databaseContext.UserAppPermissions.Add(new UserAppPermission { UserId = uId.Value, AppId = aId, PermissionId = permBase.PermissionId });
+                }
             }
+            databaseContext.SaveChanges();
         }
 
         private static string HashPassword(string password)

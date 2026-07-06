@@ -12,5 +12,7 @@ namespace RFE.Auth.API.Models.User
         
         [Required]
         public string Password { get; set; }
+
+        public string? Role { get; set; }
     }
 }

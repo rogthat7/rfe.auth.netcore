@@ -28,9 +28,9 @@ namespace RFE.Auth.Core.Services
             _emailSenderService = emailSenderService ?? throw new ArgumentNullException(nameof(userRepository));
         }
 
-        public async Task AddNewAuthUser(AuthUser confirmedUser)
+        public async Task AddNewAuthUser(AuthUser confirmedUser, string roleName)
         {
-            await _userRepository.AddNewAuthUser(confirmedUser);
+            await _userRepository.AddNewAuthUser(confirmedUser, roleName);
         }
 
         public async Task<List<AuthUserByIdGetResponse>> GetAllRegisteredUsers()

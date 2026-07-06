@@ -35,6 +35,7 @@ namespace RFE.Auth.Core.Services
             if(user==null)
                 return null;
             var userAppPermissions = await _authService.GetUserAppPermissions(user.UserId.Value);
+            var role = await _authService.GetUserRoleAsync(user.UserId.Value);
             if (user != null)
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
@@ -44,7 +45,7 @@ namespace RFE.Auth.Core.Services
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {
                     Subject = new ClaimsIdentity(new Claim[]{
-                        new Claim("role", "Admin"),
+                        new Claim("role", role ?? "appUser"),
                         new Claim("userId", user.UserId.ToString()),
                         new Claim("userName", user.Username), 
                         new Claim("apps",JsonConvert.SerializeObject(appArray)),
