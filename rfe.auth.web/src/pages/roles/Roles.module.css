@@ -1,0 +1,26 @@
+.page { animation: fadeIn 250ms var(--ease-out) both; }
+.header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:var(--space-6); gap:var(--space-4); flex-wrap:wrap; }
+.title  { font-family:var(--font-heading); font-size:var(--text-3xl); font-weight:700; }
+.subtitle { font-size:var(--text-sm); color:var(--color-text-muted); margin-top:4px; }
+.grid { display:grid; grid-template-columns:repeat(2,1fr); gap:var(--space-5); }
+.card {
+  background:var(--color-surface); border:1px solid var(--color-border);
+  border-radius:var(--radius-xl); padding:var(--space-6);
+  display:flex; flex-direction:column; gap:var(--space-3);
+  box-shadow:var(--shadow-card);
+}
+.card.c_blue   { border-color:rgba(59,130,246,0.3); }
+.card.c_indigo { border-color:rgba(99,102,241,0.3); }
+.card.c_orange { border-color:rgba(251,146,60,0.3); }
+
+.roleIcon { width:40px; height:40px; border-radius:var(--radius-md); display:flex; align-items:center; justify-content:center; background:var(--color-primary-dim); color:var(--color-primary); }
+.c_orange .roleIcon { background:var(--color-orange-dim); color:var(--color-orange); }
+.c_indigo .roleIcon { background:rgba(99,102,241,0.15); color:#A5B4FC; }
+
+.roleName { font-family:var(--font-heading); font-size:var(--text-xl); font-weight:600; }
+.roleDesc { font-size:var(--text-sm); color:var(--color-text-muted); flex:1; }
+.appsRow  { display:flex; gap:var(--space-2); flex-wrap:wrap; }
+.appTag   { font-family:var(--font-mono); font-size:var(--text-xs); background:var(--color-bg); border:1px solid var(--color-border); border-radius:var(--radius-full); padding:3px 10px; color:var(--color-text-muted); }
+
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+@media (max-width:768px) { .grid { grid-template-columns:1fr; } }

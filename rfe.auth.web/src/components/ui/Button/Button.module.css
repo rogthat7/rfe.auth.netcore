@@ -1,0 +1,75 @@
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: var(--font-body);
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 160ms var(--ease-out),
+              transform 160ms var(--ease-out),
+              box-shadow 160ms var(--ease-out),
+              opacity 160ms var(--ease-out);
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+/* ── Sizes ── */
+.sm  { padding: 6px 14px;  font-size: var(--text-sm);  }
+.md  { padding: 10px 20px; font-size: var(--text-base); }
+.lg  { padding: 13px 28px; font-size: var(--text-md);  }
+
+.fullWidth { width: 100%; }
+
+/* ── Variants ── */
+.primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+.primary:hover:not(:disabled) { background: var(--color-primary-hover); }
+
+.secondary {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-hi);
+}
+.secondary:hover:not(:disabled) { background: rgba(255,255,255,0.04); }
+
+.ghost {
+  background: transparent;
+  color: var(--color-text-muted);
+}
+.ghost:hover:not(:disabled) { background: rgba(255,255,255,0.04); color: var(--color-text); }
+
+.danger {
+  background: var(--color-error);
+  color: #fff;
+}
+.danger:hover:not(:disabled) { background: #DC2626; }
+
+/* ── Press effect (Emil Kowalski) ── */
+@media (hover: hover) and (pointer: fine) {
+  .btn:not(:disabled):active { transform: scale(0.97); }
+}
+
+/* ── Disabled ── */
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* ── Loading ── */
+.loading .content { opacity: 0; }
+
+.spinner {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 600ms linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }

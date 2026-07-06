@@ -1,0 +1,7 @@
+.page { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:60vh; text-align:center; gap:var(--space-4); animation:fadeIn 250ms var(--ease-out) both; }
+.icon { color:var(--color-primary); opacity:0.5; }
+.code { font-family:var(--font-heading); font-size:80px; font-weight:700; color:var(--color-text-dim); line-height:1; }
+.title{ font-family:var(--font-heading); font-size:var(--text-2xl); font-weight:600; }
+.desc { font-size:var(--text-base); color:var(--color-text-muted); max-width:360px; }
+.link { color:var(--color-primary); font-size:var(--text-sm); font-weight:500; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
