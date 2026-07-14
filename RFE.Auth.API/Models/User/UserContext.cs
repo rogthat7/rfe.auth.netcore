@@ -17,6 +17,7 @@ namespace RFE.Auth.API.Models.User
         public virtual DbSet<Roles> Roles {get; set;}
         public virtual DbSet<UserRole> UserRoles {get; set;}
         public virtual DbSet<Application> Apps {get; set;}
+        public virtual DbSet<AppRole> AppRoles {get; set;}
         public virtual DbSet<UserAppPermission> UserAppPermissions {get; set;}
     }
 }

@@ -1,19 +1,19 @@
 /* ─── Login Page ──────────────────────────────────────────────────────────── */
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Phone } from 'lucide-react'
+import { Phone, User } from 'lucide-react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'sonner'
 
 import { AuthLayout }   from '../../../components/layout/AuthLayout/AuthLayout'
 import { Button }       from '../../../components/ui/Button/Button'
-import { PhoneInput, PasswordInput } from '../../../components/ui/Input/Input'
+import { Input, PhoneInput, PasswordInput } from '../../../components/ui/Input/Input'
 import { useAuth }      from '../../../hooks/useAuth'
 import { loginSchema, type LoginFormValues } from '../../../utils/validators'
 import styles from './Login.module.css'
 
-const APP_ID = 'rfe-glam'
+const APP_ID = 'rfe-auth'
 
 export default function Login() {
   const { login }  = useAuth()
@@ -48,13 +48,12 @@ export default function Login() {
             control={control}
             defaultValue=""
             render={({ field }) => (
-              <PhoneInput
-                label="Phone Number"
+              <Input
+                label="Username or Phone Number"
                 id="phone"
-                value={field.value}
-                onChange={field.onChange}
-                placeholder="98765 43210"
-                icon={<Phone size={16} />}
+                {...field}
+                placeholder="admin or 9876543210"
+                icon={<User size={16} />}
                 error={errors.phone?.message}
               />
             )}

@@ -23,5 +23,6 @@ namespace RFE.Auth.Core.Models.User
         public long?    Phone       { get; set; }
         [Required]
         public virtual string Password { get; set; }
+        public bool     IsVerified  { get; set; } = false;
     }
 }

@@ -23,8 +23,20 @@ namespace RFE.Auth.Infrastructure.Repositories
 
         public async Task<AuthUser> AuthenticateAuthUser(string username, string password)
         {
-            const string sql = @"SELECT ""UserId"", ""Username"", ""Email"", ""Phone"", ""Password"" FROM ""AUTH"".""AuthUser"" WHERE ""Username"" = @Username AND ""Password"" = @Password";
-            var res = await _unitOfWork.DbConnection.QueryAsync<AuthUser>(sql, new { Username = username, Password = password });
+            long? phoneVal = null;
+            if (long.TryParse(username, out long parsedPhone))
+            {
+                phoneVal = parsedPhone;
+            }
+
+            const string sql = @"
+                SELECT ""UserId"", ""Username"", ""Email"", ""Phone"", ""Password"", ""IsVerified"" 
+                FROM ""AUTH"".""AuthUser"" 
+                WHERE (""Username"" = @Username 
+                   OR ""Email"" = @Username 
+                   OR (@PhoneVal IS NOT NULL AND ""Phone"" = @PhoneVal)) 
+                  AND ""Password"" = @Password";
+            var res = await _unitOfWork.DbConnection.QueryAsync<AuthUser>(sql, new { Username = username, PhoneVal = phoneVal, Password = password });
             return res.FirstOrDefault();
         }
 

@@ -1,25 +1,25 @@
 /* ─── Users Page ──────────────────────────────────────────────────────────── */
-import { Badge, roleToBadge } from '../../../components/ui/Badge/Badge'
-import { useAppStore, type AppState } from '../../../store/app.store'
-import { getInitials, formatPhone, formatRelativeTime, formatRole } from '../../../utils/formatters'
+import { Badge, roleToBadge } from '../../components/ui/Badge/Badge'
+import { useAppStore, type AppState } from '../../store/app.store'
+import { getInitials, formatPhone, formatRelativeTime, formatRole } from '../../utils/formatters'
 import styles from './Users.module.css'
 
 const MOCK_USERS = [
-  { id:'1', name:'Ravi Kumar',  phone:'9876543210', role:'Labourer',   apps:['rfe-glam'],               status:'Active',   lastLoginAt: new Date(Date.now()-2*60000).toISOString()   },
-  { id:'2', name:'Priya Sharma',phone:'8765432109', role:'JobCreator', apps:['rfe-glam'],               status:'Active',   lastLoginAt: new Date(Date.now()-15*60000).toISOString()  },
-  { id:'3', name:'Amit Patel',  phone:'7654321098', role:'Labourer',   apps:['rfe-glam','rfe-portal'],  status:'Active',   lastLoginAt: new Date(Date.now()-3600000).toISOString()   },
-  { id:'4', name:'Sunita Devi', phone:'6543210987', role:'JobCreator', apps:['rfe-glam'],               status:'Inactive', lastLoginAt: new Date(Date.now()-10800000).toISOString()  },
-  { id:'5', name:'Mohan Singh', phone:'5432109876', role:'Labourer',   apps:['rfe-glam'],               status:'Active',   lastLoginAt: new Date(Date.now()-86400000).toISOString()  },
-  { id:'6', name:'Dev Admin',   phone:'9999900000', role:'Admin',      apps:['rfe-glam','rfe-admin'],   status:'Active',   lastLoginAt: new Date(Date.now()-60000).toISOString()    },
+  { id:'1', name:'Ravi Kumar',  phone:'9876543210', role:'Labourer',   apps:['rfe-auth'],               status:'Active',   lastLoginAt: new Date(Date.now()-2*60000).toISOString()   },
+  { id:'2', name:'Priya Sharma',phone:'8765432109', role:'JobCreator', apps:['rfe-auth'],               status:'Active',   lastLoginAt: new Date(Date.now()-15*60000).toISOString()  },
+  { id:'3', name:'Amit Patel',  phone:'7654321098', role:'Labourer',   apps:['rfe-auth','rfe-portal'],  status:'Active',   lastLoginAt: new Date(Date.now()-3600000).toISOString()   },
+  { id:'4', name:'Sunita Devi', phone:'6543210987', role:'JobCreator', apps:['rfe-auth'],               status:'Inactive', lastLoginAt: new Date(Date.now()-10800000).toISOString()  },
+  { id:'5', name:'Mohan Singh', phone:'5432109876', role:'Labourer',   apps:['rfe-auth'],               status:'Active',   lastLoginAt: new Date(Date.now()-86400000).toISOString()  },
+  { id:'6', name:'Dev Admin',   phone:'9999900000', role:'Admin',      apps:['rfe-auth','rfe-admin'],   status:'Active',   lastLoginAt: new Date(Date.now()-60000).toISOString()    },
 ]
 
 const APP_BADGE_COLORS: Record<string, 'blue'|'orange'|'grey'|'cyan'> = {
-  'rfe-glam':   'blue',
+  'rfe-auth':   'blue',
   'rfe-admin':  'orange',
   'rfe-portal': 'cyan',
 }
 
-const APP_IDS = ['rfe-glam', 'rfe-admin', 'rfe-portal'] as const
+const APP_IDS = ['rfe-auth', 'rfe-admin', 'rfe-portal'] as const
 
 export default function Users() {
   const selectedAppId = useAppStore((s: { selectedAppId: string }) => s.selectedAppId)

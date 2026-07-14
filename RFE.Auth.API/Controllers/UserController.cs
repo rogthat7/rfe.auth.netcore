@@ -187,22 +187,28 @@ namespace RFE.Auth.API.Controllers
         [SwaggerRequestExample(typeof(SendEmailDto), typeof(string))]
         [AllowAnonymous]
         [HttpGet("confirmuserwithconfirmationlink")]
-        public async Task<ActionResult> SendConfirmationEmail([FromQuery] string tokenPayload)
+        public async Task<ActionResult> ConfirmUserWithEmailLink([FromQuery] string tokenPayload)
         {
             var handler = new JwtSecurityTokenHandler();
-            var jwtSecurityToken = handler.ReadJwtToken(tokenPayload);
-            
-            if(!ValidateToken(jwtSecurityToken))
-                return BadRequest("Invalid Token, Please Register Again");
-            var payload = jwtSecurityToken.Payload.First(data => data.Key == "payload").Value;
-            var model = JsonConvert.DeserializeObject<AuthUser>(payload.ToString());
-            await _authuserService.AddNewAuthUser(model, "appUser");
+            JwtSecurityToken jwtSecurityToken;
+            try { jwtSecurityToken = handler.ReadJwtToken(tokenPayload); }
+            catch { return BadRequest("Invalid token payload"); }
 
-            return Ok(new AuthUserAddPostResponseDto()
-            {
-                Message = "New Auth User Added",
-                Status = "OK"
-            });
+            if(!ValidateToken(jwtSecurityToken))
+                return BadRequest("Token expired or invalid. Please register again.");
+
+            var payload = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "payload").Value?.ToString();
+            var roleClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "role").Value?.ToString() ?? "appUser";
+            var appClaim  = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "app").Value?.ToString()  ?? "rfe-auth";
+
+            if (string.IsNullOrEmpty(payload))
+                return BadRequest("Invalid token content");
+
+            var model = JsonConvert.DeserializeObject<AuthUser>(payload);
+            await _authuserService.AddNewAuthUser(model, roleClaim, appClaim);
+            await _authuserService.MarkUserAsVerified(model.Username);
+
+            return Redirect("http://localhost:3001/verify-email?status=confirmed");
         }
 
         /// <summary>
@@ -314,15 +320,222 @@ namespace RFE.Auth.API.Controllers
 
             var roleClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "role").Value?.ToString() ?? "appUser";
 
-            var model = JsonConvert.DeserializeObject<AuthUser>(payloadClaim);
-            await _authuserService.AddNewAuthUser(model, roleClaim);
+            var appClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "app").Value?.ToString() ?? "rfe-auth";
 
-            return Ok(new AuthUserAddPostResponseDto()
+            var model = JsonConvert.DeserializeObject<AuthUser>(payloadClaim);
+            await _authuserService.AddNewAuthUser(model, roleClaim, appClaim);
+            await _authuserService.MarkUserAsVerified(model.Username);
+
+            return Ok(new
             {
-                Message = "New Auth User Added Successfully via Phone Verification",
-                Status = "OK"
+                success = true,
+                message = "Phone verified! Account created successfully.",
+                status = "OK"
             });
         }
 
+        /// <summary>
+        /// Compatibility login endpoint for frontend requests.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("/api/auth/login")]
+        public async Task<IActionResult> Login([FromBody] LoginRequestModel model)
+        {
+            var identifier = !string.IsNullOrEmpty(model.Username) ? model.Username
+                           : !string.IsNullOrEmpty(model.Phone) ? model.Phone : model.Email;
+            if (string.IsNullOrEmpty(identifier))
+                return BadRequest(new { success = false, message = "Username, phone or email is required." });
+
+            var encryptedPassword = EncryptionHelper.EncodePasswordToBase64(model.Password);
+            var authReq = new AuthenticateRequest
+            {
+                Username = identifier,
+                Password = encryptedPassword
+            };
+            
+            var authResponse = await _JwtAuthService.Authenticate(authReq);
+            if (authResponse == null)
+            {
+                return Unauthorized(new { success = false, message = "Username or password is incorrect" });
+            }
+
+            // Check if user is verified
+            if (!authResponse.User.IsVerified)
+            {
+                return StatusCode(403, new
+                {
+                    success = false,
+                    verified = false,
+                    message = "Account not verified. Please verify your email or phone to continue.",
+                    identifier = identifier
+                });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "Login successful",
+                data = new
+                {
+                    token = authResponse.Token.value,
+                    refreshToken = (string)null,
+                    expiresAt = DateTime.UtcNow.AddDays(1).ToString("o")
+                }
+            });
+        }
+
+        /// <summary>
+        /// Compatibility register endpoint for frontend requests.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("/api/auth/register")]
+        public async Task<IActionResult> Register([FromBody] RegisterRequestModel model)
+        {
+            if (string.IsNullOrEmpty(model.Phone) && string.IsNullOrEmpty(model.Email))
+                return BadRequest(new { success = false, message = "At least one of Phone or Email is required." });
+
+            var username = !string.IsNullOrEmpty(model.Username) ? model.Username
+                         : !string.IsNullOrEmpty(model.Phone) ? model.Phone : model.Email;
+            var role     = model.Role   ?? "appUser";
+            var appId    = model.AppId  ?? "rfe-auth";
+
+            var userDto = new AuthUserAddPostRequestDto
+            {
+                Username = username,
+                Password = model.Password,
+                Phone    = long.TryParse(model.Phone, out long phoneVal) ? phoneVal : (long?)null,
+                Email    = !string.IsNullOrEmpty(model.Email) ? model.Email : null
+            };
+
+            var mappedUser = _mapper.Map<AuthUser>(userDto);
+            mappedUser.Password = EncryptionHelper.EncodePasswordToBase64(model.Password);
+
+            // PHONE — send OTP verification
+            if (!string.IsNullOrEmpty(model.Phone))
+            {
+                var random = new Random();
+                var code   = random.Next(100000, 999999).ToString();
+
+                var securityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                    System.Text.Encoding.ASCII.GetBytes(_jwtOptions.Value.JwtKeyForEmail));
+                var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(
+                    securityKey, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256Signature);
+
+                var claims = new[] {
+                    new System.Security.Claims.Claim("payload", JsonConvert.SerializeObject(mappedUser)),
+                    new System.Security.Claims.Claim("code",    code),
+                    new System.Security.Claims.Claim("role",    role),
+                    new System.Security.Claims.Claim("app",     appId)
+                };
+                var otpToken = new JwtSecurityToken(
+                    _jwtOptions.Value.Issuer, null, claims,
+                    DateTime.UtcNow,
+                    expires: DateTime.UtcNow.AddMinutes(10),
+                    signingCredentials: credentials);
+                var jwtPayload = new JwtSecurityTokenHandler().WriteToken(otpToken);
+
+                // Attempt SMS — dev fallback: include code in response if sender fails
+                var smsSent = await _smsSender.SendUserConfirmationSms(mappedUser, code);
+
+                return Ok(new
+                {
+                    success = true,
+                    verificationMethod = "phone",
+                    tokenPayload = jwtPayload,
+                    // Dev helper: expose OTP if SMS not configured
+                    devOtp = smsSent ? null : code,
+                    message = smsSent
+                        ? "Verification code sent via SMS"
+                        : "SMS not configured — use devOtp for testing"
+                });
+            }
+
+            // EMAIL-ONLY — send email link
+            var emailSecKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+                System.Text.Encoding.ASCII.GetBytes(_jwtOptions.Value.JwtKeyForEmail));
+            var emailCreds  = new Microsoft.IdentityModel.Tokens.SigningCredentials(
+                emailSecKey, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256Signature);
+
+            var emailClaims = new[] {
+                new System.Security.Claims.Claim("payload", JsonConvert.SerializeObject(mappedUser)),
+                new System.Security.Claims.Claim("role",    role),
+                new System.Security.Claims.Claim("app",     appId)
+            };
+            var emailToken = new JwtSecurityToken(
+                _jwtOptions.Value.Issuer, null, emailClaims,
+                DateTime.UtcNow,
+                expires: DateTime.UtcNow.AddHours(24),
+                signingCredentials: emailCreds);
+            var emailJwt = new JwtSecurityTokenHandler().WriteToken(emailToken);
+
+            var emailModel = new AuthUser { Username = username, Email = model.Email, Password = mappedUser.Password };
+            await _emailSender.SendUserConfirmationEmail(emailModel);
+
+            return Ok(new
+            {
+                success = true,
+                verificationMethod = "email",
+                message = "Verification email sent. Please check your inbox."
+            });
+        }
+
+        /// <summary>
+        /// Compatibility logout endpoint for frontend requests.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("/api/auth/logout")]
+        public IActionResult Logout()
+        {
+            return Ok(new { Message = "Logged out successfully" });
+        }
+
+        /// <summary>
+        /// Resend verification — phone or email.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("/api/auth/resend-verification")]
+        public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationRequest model)
+        {
+            if (string.IsNullOrEmpty(model.Identifier))
+                return BadRequest(new { success = false, message = "Identifier required." });
+
+            // Re-use Register logic by constructing a minimal RegisterRequestModel
+            var registerModel = new RegisterRequestModel
+            {
+                Phone    = model.Method == "phone" ? model.Identifier : null,
+                Email    = model.Method == "email" ? model.Identifier : null,
+                Password = model.Password ?? "placeholder",
+                Role     = "appUser",
+                AppId    = "rfe-auth"
+            };
+            return await Register(registerModel);
+        }
+    }
+
+    public class LoginRequestModel
+    {
+        public string Username { get; set; }
+        public string Phone    { get; set; }
+        public string Email    { get; set; }
+        public string Password { get; set; }
+        public string AppId    { get; set; }
+    }
+
+    public class RegisterRequestModel
+    {
+        public string Username { get; set; }
+        public string Name     { get; set; }
+        public string Phone    { get; set; }
+        public string Email    { get; set; }
+        public string Password { get; set; }
+        public string Role     { get; set; }
+        public string AppId    { get; set; }
+    }
+
+    public class ResendVerificationRequest
+    {
+        public string Identifier { get; set; }
+        public string Method     { get; set; } // "phone" or "email"
+        public string Password   { get; set; }
     }
 }

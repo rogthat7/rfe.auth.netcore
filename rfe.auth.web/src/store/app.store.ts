@@ -12,7 +12,7 @@ export interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
-      selectedAppId:    'rfe-glam',
+      selectedAppId:    'rfe-auth',
       sidebarCollapsed: false,
       setSelectedApp: (appId) => set({ selectedAppId: appId }),
       toggleSidebar:  ()     => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),

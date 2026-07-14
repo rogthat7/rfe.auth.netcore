@@ -6,8 +6,8 @@ import styles from './Roles.module.css'
 const ROLE_DEFS = [
   { role: 'Admin',          apps: ['rfe-admin'],            color: 'orange', desc: 'Full system administration access. Not registerable via app.' },
   { role: 'PanchayatAdmin', apps: ['rfe-admin'],            color: 'orange', desc: 'Panchayat-level admin. Manages community data and approvals.' },
-  { role: 'Labourer',       apps: ['rfe-glam'],             color: 'blue',   desc: 'App user. Can browse jobs and submit applications.' },
-  { role: 'JobCreator',     apps: ['rfe-glam'],             color: 'indigo', desc: 'App user. Can post job listings and hire labourers.' },
+  { role: 'Labourer',       apps: ['rfe-auth'],             color: 'blue',   desc: 'App user. Can browse jobs and submit applications.' },
+  { role: 'JobCreator',     apps: ['rfe-auth'],             color: 'indigo', desc: 'App user. Can post job listings and hire labourers.' },
 ]
 
 export default function Roles() {

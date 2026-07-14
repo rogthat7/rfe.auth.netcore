@@ -4,8 +4,8 @@ import type { UserRole } from './user.types'
 
 export interface Application {
   id: string;
-  appId: string;          // e.g. "rfe-glam"
-  displayName: string;    // e.g. "Glam Community Platform"
+  appId: string;          // e.g. "rfe-auth"
+  displayName: string;    // e.g. "Auth Community Platform"
   description?: string;
   allowedRoles: UserRole[];
   userCount: number;

@@ -7,25 +7,45 @@ const phoneSchema = z
   .transform((v) => v.replace(/\s/g, ''))
   .refine((v) => /^\d{10}$/.test(v), 'Phone must be exactly 10 digits')
 
+const usernameOrPhoneSchema = z
+  .string()
+  .min(1, 'Username, email or phone number is required')
+  .transform((v) => v.trim())
+  .refine((v) => 
+    /^\d{10}$/.test(v) || 
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || 
+    /^[a-zA-Z0-9_@.-]{3,50}$/.test(v), 
+    'Must be a 10-digit phone number, a valid email, or a valid username (3-50 characters)'
+  )
+
 export const loginSchema = z.object({
-  phone:    phoneSchema,
+  phone:    usernameOrPhoneSchema,
   password: z.string().min(6, 'Password must be at least 6 characters'),
 })
 export type LoginFormValues = z.infer<typeof loginSchema>
 
 export const registerSchema = z
   .object({
+    username:        z.string().min(3, 'Username must be at least 3 characters').regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens').optional().or(z.literal('')),
     name:            z.string().min(2, 'Name must be at least 2 characters'),
-    phone:           phoneSchema,
+    phone:           z.string().transform((v) => v ? v.replace(/\s/g, '') : '').refine((v) => v === '' || /^\d{10}$/.test(v), 'Phone must be exactly 10 digits').optional(),
+    email:           z.string().refine((v) => !v || v === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'Invalid email address').optional(),
     password:        z.string().min(6, 'Password must be at least 6 characters'),
     confirmPassword: z.string(),
-    role:            z.enum(['Labourer', 'JobCreator']).refine((v) => v !== undefined, {
-      message: 'Please select a role',
-    }),
+    userType:        z.enum(['Admin', 'App']),
+    appId:           z.string().optional(),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: 'Passwords do not match',
     path:    ['confirmPassword'],
+  })
+  .refine((d) => (d.phone && d.phone.trim() !== '') || (d.email && d.email.trim() !== ''), {
+    message: 'At least one of Phone or Email is required',
+    path:    ['phone'],
+  })
+  .refine((d) => d.userType !== 'App' || (d.appId && d.appId.trim() !== ''), {
+    message: 'Please select an application',
+    path:    ['appId'],
   })
 export type RegisterFormValues = z.infer<typeof registerSchema>
 

@@ -25,7 +25,7 @@ export function AuthLayout({ children, tagline = 'Connecting Communities, Creati
           <div className={styles.brand}>
             <div className={styles.brandIcon}><Shield size={28} strokeWidth={2.5} /></div>
             <div>
-              <div className={styles.brandName}>RFE Glam</div>
+              <div className={styles.brandName}>RFE Auth</div>
               <div className={styles.brandSub}>Auth API</div>
             </div>
           </div>

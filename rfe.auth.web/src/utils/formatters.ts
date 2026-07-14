@@ -47,6 +47,7 @@ export function formatRelativeTime(iso: string): string {
  * Get initials from a name: "Ravi Kumar" → "RK"
  */
 export function getInitials(name: string): string {
+  if (!name) return 'SA'
   return name
     .split(' ')
     .filter(Boolean)

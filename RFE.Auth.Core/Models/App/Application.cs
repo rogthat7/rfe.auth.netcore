@@ -13,5 +13,14 @@ namespace RFE.Auth.Core.Models.App
         public int AppId { get; set; }
         [Required]
         public string AppName { get; set; }
+
+        [Required]
+        public string DisplayName { get; set; }
+
+        public string Description { get; set; }
+
+        public string WebhookUrl { get; set; }
+
+        public System.DateTime CreatedAt { get; set; } = System.DateTime.UtcNow;
     }
 }

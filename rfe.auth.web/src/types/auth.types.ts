@@ -1,17 +1,40 @@
 /* ─── Auth Types ──────────────────────────────────────────────────────────── */
 
 export interface LoginRequest {
-  phone: string;
+  username?: string;
+  phone?: string;
+  email?: string;
   password: string;
-  appId: string;
+  appId?: string;
 }
 
 export interface RegisterRequest {
-  name: string;
-  phone: string;
+  username?: string;
+  name?: string;
+  phone?: string;
+  email?: string;
   password: string;
-  role: 'Labourer' | 'JobCreator';
+  role: string;
   appId: string;
+}
+
+/** Returned by /api/auth/register — signals which verification to do next */
+export interface VerificationPending {
+  verificationMethod: 'phone' | 'email';
+  tokenPayload?: string;
+  devOtp?: string;       // only present when SMS not configured
+  message: string;
+}
+
+export interface VerifyPhoneRequest {
+  tokenPayload: string;
+  code: string;
+}
+
+export interface ResendVerificationRequest {
+  identifier: string;
+  method: 'phone' | 'email';
+  password?: string;
 }
 
 export interface AuthResponse {

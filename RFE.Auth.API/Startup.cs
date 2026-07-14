@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -73,6 +74,16 @@ namespace RFE.Auth.API
             services.Configure<JwtOptions>(Configuration.GetSection("JwtConfig"));
             services.Configure<ApiInfo>(Configuration.GetSection("ApiInfo"));
 
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", builder =>
+                {
+                    builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader();
+                });
+            });
+
             // This method gets called by the runtime. Use this method to add services to the container.
             services.AddMvc(options => {
                 options.EnableEndpointRouting = false;
@@ -115,6 +126,13 @@ namespace RFE.Auth.API
                     Title = "rfe.auth.api",
                     Description="ASP.NET Core 10.0 Web API" 
                 });
+
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                if (File.Exists(xmlPath))
+                {
+                    swagger.IncludeXmlComments(xmlPath);
+                }
                     // To Enable authorization using Swagger (JWT)  
                 swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()  
                 {  
@@ -197,7 +215,7 @@ namespace RFE.Auth.API
             //app.UseHttpsRedirection();
 
             app.UseRouting();
-            app.UseCors();
+            app.UseCors("AllowAll");
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseMvc();

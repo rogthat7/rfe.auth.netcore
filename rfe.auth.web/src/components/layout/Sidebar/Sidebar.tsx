@@ -3,9 +3,10 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, AppWindow, BarChart3,
   Users, Layers, Shield, Activity, ScrollText, Settings,
-  ChevronRight,
+  LogOut,
 } from 'lucide-react'
 import { useAuthStore } from '@store/auth.store'
+import { useAuth }      from '../../../hooks/useAuth'
 import { getInitials } from '@utils/formatters'
 import styles from './Sidebar.module.css'
 
@@ -51,6 +52,7 @@ function NavSection({ label, items }: { label: string; items: NavItem[] }) {
 
 export function Sidebar() {
   const user = useAuthStore((s) => s.user)
+  const { logout } = useAuth()
 
   return (
     <aside className={styles.sidebar}>
@@ -81,7 +83,17 @@ export function Sidebar() {
           <span className={styles.profileName}>{user?.name ?? 'Super Admin'}</span>
           <span className={styles.profileRole}>SYSTEM</span>
         </div>
-        <ChevronRight size={14} className={styles.profileArrow} />
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            logout()
+          }}
+          className={styles.logoutButton}
+          title="Log Out"
+          id="logout-btn"
+        >
+          <LogOut size={16} className={styles.logoutIcon} />
+        </button>
       </div>
     </aside>
   )

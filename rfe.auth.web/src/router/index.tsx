@@ -9,6 +9,9 @@ import styles from './router.module.css'
 
 const Login        = lazy(() => import('../pages/auth/Login/Login'))
 const Register     = lazy(() => import('../pages/auth/Register/Register'))
+const VerifyPhone  = lazy(() => import('../pages/auth/VerifyPhone/VerifyPhone'))
+const VerifyEmail  = lazy(() => import('../pages/auth/VerifyEmail/VerifyEmail'))
+const Unverified   = lazy(() => import('../pages/auth/Unverified/Unverified'))
 const Dashboard    = lazy(() => import('../pages/dashboard/Dashboard'))
 const Applications = lazy(() => import('../pages/applications/Applications'))
 const Users        = lazy(() => import('../pages/users/Users'))
@@ -54,6 +57,18 @@ export const router = createBrowserRouter([
   {
     path: '/register',
     element: <PublicRoute><Suspense fallback={<PageLoader />}><Register /></Suspense></PublicRoute>,
+  },
+  {
+    path: '/verify-phone',
+    element: <Suspense fallback={<PageLoader />}><VerifyPhone /></Suspense>,
+  },
+  {
+    path: '/verify-email',
+    element: <Suspense fallback={<PageLoader />}><VerifyEmail /></Suspense>,
+  },
+  {
+    path: '/unverified',
+    element: <Suspense fallback={<PageLoader />}><Unverified /></Suspense>,
   },
   {
     element: <ProtectedLayout />,

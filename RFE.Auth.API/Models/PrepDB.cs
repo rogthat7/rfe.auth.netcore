@@ -37,6 +37,8 @@ namespace RFE.Auth.API.Models
             var roleEmployer = databaseContext.Roles.FirstOrDefault(r => r.RoleName == "Employer") ?? new Roles { RoleName = "Employer" };
             var rolePanchayat = databaseContext.Roles.FirstOrDefault(r => r.RoleName == "PanchayatAdmin") ?? new Roles { RoleName = "PanchayatAdmin" };
             var roleAdmin = databaseContext.Roles.FirstOrDefault(r => r.RoleName == "Admin") ?? new Roles { RoleName = "Admin" };
+            var roleLabourer = databaseContext.Roles.FirstOrDefault(r => r.RoleName == "Labourer") ?? new Roles { RoleName = "Labourer" };
+            var roleJobCreator = databaseContext.Roles.FirstOrDefault(r => r.RoleName == "JobCreator") ?? new Roles { RoleName = "JobCreator" };
             
             if (roleAppUser.RoleId == 0) databaseContext.Roles.Add(roleAppUser);
             if (roleAuthUser.RoleId == 0) databaseContext.Roles.Add(roleAuthUser);
@@ -44,47 +46,69 @@ namespace RFE.Auth.API.Models
             if (roleEmployer.RoleId == 0) databaseContext.Roles.Add(roleEmployer);
             if (rolePanchayat.RoleId == 0) databaseContext.Roles.Add(rolePanchayat);
             if (roleAdmin.RoleId == 0) databaseContext.Roles.Add(roleAdmin);
+            if (roleLabourer.RoleId == 0) databaseContext.Roles.Add(roleLabourer);
+            if (roleJobCreator.RoleId == 0) databaseContext.Roles.Add(roleJobCreator);
             databaseContext.SaveChanges();
 
             // 2. Ensure Applications
             var appFish = databaseContext.Apps.FirstOrDefault(a => a.AppName == "fish-tracker") ?? new Application { AppName = "fish-tracker" };
-            var appGlam = databaseContext.Apps.FirstOrDefault(a => a.AppName == "rfe-glam") ?? new Application { AppName = "rfe-glam" };
+            var appAuth = databaseContext.Apps.FirstOrDefault(a => a.AppName == "rfe-auth") ?? new Application { AppName = "rfe-auth" };
             if (appFish.AppId == 0) databaseContext.Apps.Add(appFish);
-            if (appGlam.AppId == 0) databaseContext.Apps.Add(appGlam);
+            if (appAuth.AppId == 0) databaseContext.Apps.Add(appAuth);
             databaseContext.SaveChanges();
 
             // 3. Ensure AuthUsers
+            var userSystemAdmin = databaseContext.AuthUsers.FirstOrDefault(u => u.Username == "admin") ?? new AuthUser {
+                Email = "admin@rfeauth.com",
+                Username = "admin",
+                Password = EncryptionHelper.EncodePasswordToBase64("rogthat7"),
+                Phone = 9999900000,
+                IsVerified = true
+            };
             var userFishAdmin = databaseContext.AuthUsers.FirstOrDefault(u => u.Phone == 8806329362) ?? new AuthUser {
                 Email = "admin@fish-tracker.com",
                 Username = "admin@fish-tracker.com",
                 Password = EncryptionHelper.EncodePasswordToBase64("admin"),
-                Phone = 8806329362
+                Phone = 8806329362,
+                IsVerified = true
             };
             var userEmployer = databaseContext.AuthUsers.FirstOrDefault(u => u.Phone == 9876543210) ?? new AuthUser {
-                Email = "employer@glam.com",
+                Email = "employer@auth.com",
                 Username = "9876543210",
                 Password = EncryptionHelper.EncodePasswordToBase64("hashed"),
-                Phone = 9876543210
+                Phone = 9876543210,
+                IsVerified = true
             };
             var userLaborer = databaseContext.AuthUsers.FirstOrDefault(u => u.Phone == 9876543211) ?? new AuthUser {
-                Email = "laborer@glam.com",
+                Email = "laborer@auth.com",
                 Username = "9876543211",
                 Password = EncryptionHelper.EncodePasswordToBase64("hashed"),
-                Phone = 9876543211
+                Phone = 9876543211,
+                IsVerified = true
             };
             var userPanchayat = databaseContext.AuthUsers.FirstOrDefault(u => u.Phone == 9876543212) ?? new AuthUser {
-                Email = "panchayat@glam.com",
+                Email = "panchayat@auth.com",
                 Username = "9876543212",
                 Password = EncryptionHelper.EncodePasswordToBase64("hashed"),
-                Phone = 9876543212
+                Phone = 9876543212,
+                IsVerified = true
             };
             var userAdmin = databaseContext.AuthUsers.FirstOrDefault(u => u.Phone == 9876543213) ?? new AuthUser {
-                Email = "admin@glam.com",
+                Email = "admin@auth.com",
                 Username = "9876543213",
                 Password = EncryptionHelper.EncodePasswordToBase64("hashed"),
-                Phone = 9876543213
+                Phone = 9876543213,
+                IsVerified = true
             };
 
+            userSystemAdmin.IsVerified = true;
+            userFishAdmin.IsVerified = true;
+            userEmployer.IsVerified = true;
+            userLaborer.IsVerified = true;
+            userPanchayat.IsVerified = true;
+            userAdmin.IsVerified = true;
+
+            if (userSystemAdmin.UserId == null) databaseContext.AuthUsers.Add(userSystemAdmin);
             if (userFishAdmin.UserId == null) databaseContext.AuthUsers.Add(userFishAdmin);
             if (userEmployer.UserId == null) databaseContext.AuthUsers.Add(userEmployer);
             if (userLaborer.UserId == null) databaseContext.AuthUsers.Add(userLaborer);
@@ -94,11 +118,12 @@ namespace RFE.Auth.API.Models
 
             // 4. Ensure UserRoles
             var mappings = new[] {
+                (userSystemAdmin.UserId, roleAdmin.RoleId, appAuth.AppId),
                 (userFishAdmin.UserId, roleAppUser.RoleId, appFish.AppId),
-                (userEmployer.UserId, roleEmployer.RoleId, appGlam.AppId),
-                (userLaborer.UserId, roleLaborer.RoleId, appGlam.AppId),
-                (userPanchayat.UserId, rolePanchayat.RoleId, appGlam.AppId),
-                (userAdmin.UserId, roleAdmin.RoleId, appGlam.AppId),
+                (userEmployer.UserId, roleEmployer.RoleId, appAuth.AppId),
+                (userLaborer.UserId, roleLaborer.RoleId, appAuth.AppId),
+                (userPanchayat.UserId, rolePanchayat.RoleId, appAuth.AppId),
+                (userAdmin.UserId, roleAdmin.RoleId, appAuth.AppId),
             };
 
             foreach (var (uId, rId, aId) in mappings)
@@ -120,11 +145,12 @@ namespace RFE.Auth.API.Models
 
             // 6. Ensure UserAppPermission
             var appPerms = new[] {
+                (userSystemAdmin.UserId, appAuth.AppId),
                 (userFishAdmin.UserId, appFish.AppId),
-                (userEmployer.UserId, appGlam.AppId),
-                (userLaborer.UserId, appGlam.AppId),
-                (userPanchayat.UserId, appGlam.AppId),
-                (userAdmin.UserId, appGlam.AppId),
+                (userEmployer.UserId, appAuth.AppId),
+                (userLaborer.UserId, appAuth.AppId),
+                (userPanchayat.UserId, appAuth.AppId),
+                (userAdmin.UserId, appAuth.AppId),
             };
 
             foreach (var (uId, aId) in appPerms)
