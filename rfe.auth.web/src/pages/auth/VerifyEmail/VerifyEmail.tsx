@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import styles from './VerifyEmail.module.css'
@@ -6,7 +6,7 @@ import styles from './VerifyEmail.module.css'
 export default function VerifyEmail() {
   const location     = useLocation()
   const [params]     = useSearchParams()
-  const state = location.state as { identifier?: string } | null
+  const state = location.state as { identifier?: string; devLink?: string } | null
 
   const status   = params.get('status')           // 'confirmed' when redirect from backend
   const confirmed = status === 'confirmed'
@@ -46,6 +46,17 @@ export default function VerifyEmail() {
               Didn't receive it? Check your spam folder.
             </p>
             <Link to="/login" id="back-to-login" className={styles.back}>← Back to login</Link>
+            
+            {state?.devLink && (
+              <div className={styles.devBanner}>
+                <strong>Dev Fallback:</strong> SMTP email configuration failed. You can confirm your registration by clicking the link below:
+                <div className={styles.devLinkWrap}>
+                  <a href={state.devLink} className={styles.devLink}>
+                    Confirm Registration Link
+                  </a>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>

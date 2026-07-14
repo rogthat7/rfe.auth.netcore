@@ -71,7 +71,12 @@ export function useAuth() {
       })
     } else {
       toast.info('Verification email sent! Check your inbox.')
-      navigate('/verify-email', { state: { identifier: req.email } })
+      navigate('/verify-email', {
+        state: {
+          identifier: req.email,
+          devLink:    pending.devLink,
+        },
+      })
     }
   }
 

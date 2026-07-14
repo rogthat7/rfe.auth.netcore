@@ -205,8 +205,20 @@ namespace RFE.Auth.API.Controllers
                 return BadRequest("Invalid token content");
 
             var model = JsonConvert.DeserializeObject<AuthUser>(payload);
-            await _authuserService.AddNewAuthUser(model, roleClaim, appClaim);
-            await _authuserService.MarkUserAsVerified(model.Username);
+            try
+            {
+                await _authuserService.AddNewAuthUser(model, roleClaim, appClaim);
+                await _authuserService.MarkUserAsVerified(model.Username);
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("23505") || ex.InnerException?.Message.Contains("23505") == true ||
+                    ex.Message.Contains("unique constraint") || ex.InnerException?.Message.Contains("unique constraint") == true)
+                {
+                    return BadRequest("User already exists or has been verified by another session.");
+                }
+                throw;
+            }
 
             return Redirect("http://localhost:3001/verify-email?status=confirmed");
         }
@@ -323,8 +335,20 @@ namespace RFE.Auth.API.Controllers
             var appClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "app").Value?.ToString() ?? "rfe-auth";
 
             var model = JsonConvert.DeserializeObject<AuthUser>(payloadClaim);
-            await _authuserService.AddNewAuthUser(model, roleClaim, appClaim);
-            await _authuserService.MarkUserAsVerified(model.Username);
+            try
+            {
+                await _authuserService.AddNewAuthUser(model, roleClaim, appClaim);
+                await _authuserService.MarkUserAsVerified(model.Username);
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("23505") || ex.InnerException?.Message.Contains("23505") == true ||
+                    ex.Message.Contains("unique constraint") || ex.InnerException?.Message.Contains("unique constraint") == true)
+                {
+                    return BadRequest("User already exists or has been verified by another session.");
+                }
+                throw;
+            }
 
             return Ok(new
             {
@@ -399,11 +423,31 @@ namespace RFE.Auth.API.Controllers
             var role     = model.Role   ?? "appUser";
             var appId    = model.AppId  ?? "rfe-auth";
 
+            long? phoneVal = long.TryParse(model.Phone, out long parsedPhone) ? parsedPhone : (long?)null;
+
+            // Check if username, email, or phone is already taken
+            var existingUsers = await _authuserService.GetAllRegisteredUsers();
+            if (existingUsers != null)
+            {
+                if (existingUsers.Any(u => !string.IsNullOrEmpty(u.Username) && u.Username.Equals(username, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return BadRequest(new { success = false, message = "Username is already taken." });
+                }
+                if (!string.IsNullOrEmpty(model.Email) && existingUsers.Any(u => !string.IsNullOrEmpty(u.Email) && u.Email.Equals(model.Email, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return BadRequest(new { success = false, message = "Email is already registered." });
+                }
+                if (phoneVal.HasValue && existingUsers.Any(u => u.Phone == phoneVal.Value))
+                {
+                    return BadRequest(new { success = false, message = "Phone number is already registered." });
+                }
+            }
+
             var userDto = new AuthUserAddPostRequestDto
             {
                 Username = username,
                 Password = model.Password,
-                Phone    = long.TryParse(model.Phone, out long phoneVal) ? phoneVal : (long?)null,
+                Phone    = phoneVal,
                 Email    = !string.IsNullOrEmpty(model.Email) ? model.Email : null
             };
 
@@ -469,13 +513,19 @@ namespace RFE.Auth.API.Controllers
             var emailJwt = new JwtSecurityTokenHandler().WriteToken(emailToken);
 
             var emailModel = new AuthUser { Username = username, Email = model.Email, Password = mappedUser.Password };
-            await _emailSender.SendUserConfirmationEmail(emailModel);
+            var emailSent = await _emailSender.SendUserConfirmationEmail(emailModel, role, appId);
+
+            var devLink = emailSent ? null : $"https://localhost:5001/api/auth/v1/User/confirmuserwithconfirmationlink?tokenPayload={emailJwt}";
 
             return Ok(new
             {
                 success = true,
                 verificationMethod = "email",
-                message = "Verification email sent. Please check your inbox."
+                emailSent = emailSent,
+                devLink = devLink,
+                message = emailSent
+                    ? "Verification email sent. Please check your inbox."
+                    : "Email sending failed (SMTP configuration error) — use devLink for testing"
             });
         }
 

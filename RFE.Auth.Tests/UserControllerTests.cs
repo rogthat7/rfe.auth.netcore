@@ -47,6 +47,10 @@ namespace RFE.Auth.Tests
             };
             _jwtOptionsMock.Setup(o => o.Value).Returns(jwtOptions);
 
+            _userServiceMock
+                .Setup(s => s.GetAllRegisteredUsers())
+                .ReturnsAsync(new List<AuthUserByIdGetResponse>());
+
             _controller = new UserController(
                 _authServiceMock.Object,
                 _userServiceMock.Object,
@@ -194,7 +198,7 @@ namespace RFE.Auth.Tests
                 .Returns(new AuthUser { Username = "test@example.com", Email = "test@example.com" });
 
             _emailSenderMock
-                .Setup(s => s.SendUserConfirmationEmail(It.IsAny<AuthUser>()))
+                .Setup(s => s.SendUserConfirmationEmail(It.IsAny<AuthUser>(), It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(true);
 
             // Act

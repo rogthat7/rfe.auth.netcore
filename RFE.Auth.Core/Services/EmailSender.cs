@@ -42,23 +42,23 @@ namespace RFE.Auth.Core.Services
             {
                  try
                  {
-                     // Allow SSLv3.0 and all versions of TLS
-                    client.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13;
-                    // client.CheckCertificateRevocation  = false;
-                    await client.ConnectAsync(_emailConfig.SmtpServer, _emailConfig.Port, false);
-                    client.AuthenticationMechanisms.Remove("XOAUTH2");
-                    await client.AuthenticateAsync(_emailConfig.UserName, _emailConfig.Password);
-                    
-                    await client.SendAsync(emailMessage);
+                     // Use secure modern TLS protocols
+                     client.SslProtocols = System.Security.Authentication.SslProtocols.Tls12 | System.Security.Authentication.SslProtocols.Tls13;
+                     // Use SecureSocketOptions.Auto to handle STARTTLS (port 587) and SSL (port 465) properly
+                     await client.ConnectAsync(_emailConfig.SmtpServer, _emailConfig.Port, SecureSocketOptions.Auto);
+                     client.AuthenticationMechanisms.Remove("XOAUTH2");
+                     await client.AuthenticateAsync(_emailConfig.UserName, _emailConfig.Password);
+                     
+                     await client.SendAsync(emailMessage);
                  }
                  catch(Exception e){
                      emailSent = false;
-                     _logger.LogError(e.Message);
+                     _logger.LogError(e, "Error sending email: {Message}", e.Message);
                  }
                  finally
                  {
-                    await client.DisconnectAsync(quit:true);
-                    client.Dispose();
+                     await client.DisconnectAsync(quit:true);
+                     client.Dispose();
                  }
                  return emailSent;
             }
@@ -74,24 +74,25 @@ namespace RFE.Auth.Core.Services
             return emailMessage;
         }
 
-        public async Task<bool> SendUserConfirmationEmail(AuthUser authUser)
+        public async Task<bool> SendUserConfirmationEmail(AuthUser authUser, string role = "appUser", string appId = "rfe-auth")
         {
-            var emailMessage = await  GetUserConfirmationEmailMessage(authUser);
+            var emailMessage = await GetUserConfirmationEmailMessage(authUser, role, appId);
             return await Send(emailMessage);
         }
 
-        public async Task<MimeMessage> GetUserConfirmationEmailMessage(AuthUser authUser)
+        public async Task<MimeMessage> GetUserConfirmationEmailMessage(AuthUser authUser, string role, string appId)
         {
             var key = _jwtOptions.Value.JwtKeyForEmail;
-            var htmlBody = await GetEmailBody(authUser);
+            var htmlBody = await GetEmailBody(authUser, role, appId);
             var builder = new BodyBuilder();
             #region Processing Images ToDo
-            var image1 = builder.LinkedResources.Add ("Resources/images/image-1.png");
-            var image2 = builder.LinkedResources.Add ("Resources/images/image-2.png");
-            var image3 = builder.LinkedResources.Add ("Resources/images/image-3.png");
-            var image4 = builder.LinkedResources.Add ("Resources/images/image-4.png");
-            var image5 = builder.LinkedResources.Add ("Resources/images/image-5.png");
-            var image6 = builder.LinkedResources.Add ("Resources/images/image-6.png");
+            var baseDir = AppContext.BaseDirectory;
+            var image1 = builder.LinkedResources.Add(Path.Combine(baseDir, "Resources", "images", "image-1.png"));
+            var image2 = builder.LinkedResources.Add(Path.Combine(baseDir, "Resources", "images", "image-2.png"));
+            var image3 = builder.LinkedResources.Add(Path.Combine(baseDir, "Resources", "images", "image-3.png"));
+            var image4 = builder.LinkedResources.Add(Path.Combine(baseDir, "Resources", "images", "image-4.png"));
+            var image5 = builder.LinkedResources.Add(Path.Combine(baseDir, "Resources", "images", "image-5.png"));
+            var image6 = builder.LinkedResources.Add(Path.Combine(baseDir, "Resources", "images", "image-6.png"));
 
             image1.ContentId = MimeUtils.GenerateMessageId ();
             image2.ContentId = MimeUtils.GenerateMessageId ();
@@ -99,12 +100,14 @@ namespace RFE.Auth.Core.Services
             image4.ContentId = MimeUtils.GenerateMessageId ();
             image5.ContentId = MimeUtils.GenerateMessageId ();
             image6.ContentId = MimeUtils.GenerateMessageId ();
-            htmlBody = htmlBody.Replace("images/image-1.png",$"\"cid: {image1.ContentId}\"");
-            htmlBody = htmlBody.Replace("images/image-2.png",$"\"cid: {image2.ContentId}\"");
-            htmlBody = htmlBody.Replace("images/image-3.png",$"\"cid: {image3.ContentId}\"");
-            htmlBody = htmlBody.Replace("images/image-4.png",$"\"cid: {image4.ContentId}\"");
-            htmlBody = htmlBody.Replace("images/image-5.png",$"\"cid: {image5.ContentId}\"");
-            htmlBody = htmlBody.Replace("images/image-6.png",$"\"cid: {image6.ContentId}\"");
+            
+            // Replaced without extra escaped double quotes so html reads standard src="cid:..."
+            htmlBody = htmlBody.Replace("images/image-1.png", $"cid:{image1.ContentId}");
+            htmlBody = htmlBody.Replace("images/image-2.png", $"cid:{image2.ContentId}");
+            htmlBody = htmlBody.Replace("images/image-3.png", $"cid:{image3.ContentId}");
+            htmlBody = htmlBody.Replace("images/image-4.png", $"cid:{image4.ContentId}");
+            htmlBody = htmlBody.Replace("images/image-5.png", $"cid:{image5.ContentId}");
+            htmlBody = htmlBody.Replace("images/image-6.png", $"cid:{image6.ContentId}");
             #endregion
             builder.HtmlBody = htmlBody; 
             Message message = new Message(new string[] {authUser.Email}, DEFAULT_USER_CONFIRMATION_SUBJECT, builder.HtmlBody ); 
@@ -112,14 +115,15 @@ namespace RFE.Auth.Core.Services
             return emailMessage;
         }
 
-        private async Task<string> GetEmailBody(AuthUser authUser)
+        private async Task<string> GetEmailBody(AuthUser authUser, string role, string appId)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_jwtOptions.Value.JwtKeyForEmail));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
 
             var claims = new[] {
-                new Claim("payload",JsonConvert.SerializeObject(authUser)),
-                
+                new Claim("payload", JsonConvert.SerializeObject(authUser)),
+                new Claim("role", role),
+                new Claim("app", appId)
             };
             var token = new JwtSecurityToken(
                 _jwtOptions.Value.Issuer,
@@ -130,9 +134,10 @@ namespace RFE.Auth.Core.Services
                 signingCredentials:credentials
             );
             var jwtPayLoad = new JwtSecurityTokenHandler().WriteToken(token);
-            var strHtml = await File.ReadAllTextAsync("./Resources/email.html");
+            var baseDir = AppContext.BaseDirectory;
+            var strHtml = await File.ReadAllTextAsync(Path.Combine(baseDir, "Resources", "email.html"));
             strHtml = strHtml.Replace("#username", authUser.Email);
-            strHtml = strHtml.Replace("#confirmationlink", $"https://localhost:5001/api/v1/user/confirmuserwithconfirmationlink?tokenPayload={jwtPayLoad}");
+            strHtml = strHtml.Replace("#confirmationlink", $"https://localhost:5001/api/auth/v1/User/confirmuserwithconfirmationlink?tokenPayload={jwtPayLoad}");
             return strHtml;
         }
     }

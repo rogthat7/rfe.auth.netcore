@@ -23,6 +23,7 @@ export interface VerificationPending {
   verificationMethod: 'phone' | 'email';
   tokenPayload?: string;
   devOtp?: string;       // only present when SMS not configured
+  devLink?: string;      // only present when email sending fails / dev mode
   message: string;
 }
 

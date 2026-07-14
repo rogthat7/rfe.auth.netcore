@@ -1,4 +1,4 @@
-﻿.page {
+.page {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -127,3 +127,33 @@
   margin-top: 1rem;
 }
 .back:hover { color: #94A3B8; }
+
+.devBanner {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 12px;
+  text-align: left;
+  font-size: 0.8rem;
+  color: #FBBF24;
+  line-height: 1.5;
+}
+
+.devLinkWrap {
+  margin-top: 0.5rem;
+  font-family: monospace;
+  word-break: break-all;
+  background: rgba(0, 0, 0, 0.20);
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.devLink {
+  color: #34D399;
+  text-decoration: underline;
+}
+.devLink:hover {
+  color: #6EE7B7;
+}
