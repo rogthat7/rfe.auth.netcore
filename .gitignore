@@ -1,5 +1,6 @@
 bin/
 obj/
+.vs/
 
 # ==========================================
 # Agentic & Customizations (Antigravity/Claude Code)

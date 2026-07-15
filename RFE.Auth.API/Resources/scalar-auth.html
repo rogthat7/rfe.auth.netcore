@@ -1,0 +1,484 @@
+<script>
+    // Self-executing script to inject the premium Authentication UI into Scalar
+    (() => {
+        // Deep DOM query helper to pierce through shadow boundaries if present
+        function findInShadows(selector, root = document) {
+            const el = root.querySelector(selector);
+            if (el) return el;
+
+            const all = root.querySelectorAll('*');
+            for (const item of all) {
+                if (item.shadowRoot) {
+                    const found = findInShadows(selector, item.shadowRoot);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+
+        // Geometric helper to find the sidebar based on its viewport layout parameters
+        function findSidebarByGeometry(root = document) {
+            const elements = Array.from(root.querySelectorAll('*'));
+            for (const el of elements) {
+                const rect = el.getBoundingClientRect();
+                // A sidebar is on the left edge (left: 0), tall (height > 70% viewport), and of reasonable width
+                if (rect.left === 0 && rect.width >= 150 && rect.width <= 360 && rect.height > window.innerHeight * 0.7) {
+                    return el;
+                }
+                if (el.shadowRoot) {
+                    const found = findSidebarByGeometry(el.shadowRoot);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+
+        const cssRules = `
+            .custom-auth-trigger-container {
+                padding: 12px 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                width: 100%;
+                box-sizing: border-box;
+                z-index: 10;
+            }
+
+            /* Trigger Button Styling */
+            .custom-auth-trigger {
+                width: 100%;
+                box-sizing: border-box;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                padding: 8px 14px;
+                background: var(--scalar-background-3, #1a1a22);
+                border: 1px solid var(--scalar-border-color, #2e2e3a);
+                border-radius: 8px;
+                color: var(--scalar-color-1, #fff);
+                font-family: var(--scalar-font, sans-serif);
+                font-size: 13px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), 
+                            background-color 150ms ease-out, 
+                            border-color 150ms ease-out,
+                            color 150ms ease-out;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            }
+
+            .custom-auth-trigger:hover {
+                background: var(--scalar-background-2, #272733);
+                border-color: var(--scalar-color-primary, #3b82f6);
+            }
+
+            .custom-auth-trigger:active {
+                transform: scale(0.97);
+            }
+
+            .custom-auth-trigger svg {
+                width: 13px;
+                height: 13px;
+                fill: currentColor;
+                transition: transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
+            }
+
+            .custom-auth-trigger:hover svg {
+                transform: rotate(-10deg);
+            }
+
+            /* Modal Overlay BackDrop */
+            .custom-auth-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.4);
+                backdrop-filter: blur(8px);
+                z-index: 999998;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 220ms cubic-bezier(0.23, 1, 0.32, 1);
+            }
+
+            .custom-auth-overlay.open {
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            /* Modal Popover Container */
+            .custom-auth-popover {
+                position: fixed;
+                top: 25%;
+                left: 50%;
+                transform: translate(-50%, -20px) scale(0.95);
+                width: 360px;
+                background: var(--scalar-background-1, #1e1e24);
+                border: 1px solid var(--scalar-border-color, #2e2e38);
+                border-radius: 12px;
+                padding: 24px;
+                color: var(--scalar-color-1, #fff);
+                font-family: var(--scalar-font, sans-serif);
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 
+                            0 10px 10px -5px rgba(0, 0, 0, 0.2);
+                z-index: 999999;
+                opacity: 0;
+                pointer-events: none;
+                transition: transform 220ms cubic-bezier(0.23, 1, 0.32, 1), 
+                            opacity 220ms cubic-bezier(0.23, 1, 0.32, 1);
+            }
+
+            .custom-auth-popover.open {
+                transform: translate(-50%, 0) scale(1);
+                opacity: 1;
+                pointer-events: auto;
+            }
+
+            .custom-auth-popover h3 {
+                margin-top: 0;
+                margin-bottom: 6px;
+                font-size: 16px;
+                color: var(--scalar-color-1, #fff);
+                font-weight: 600;
+            }
+
+            .custom-auth-popover p {
+                margin-top: 0;
+                margin-bottom: 16px;
+                font-size: 12px;
+                color: var(--scalar-color-3, #9ca3af);
+                line-height: 1.5;
+            }
+
+            .custom-auth-popover input {
+                width: 100%;
+                padding: 10px 12px;
+                margin-bottom: 12px;
+                background: var(--scalar-background-2, #0f0f11);
+                border: 1px solid var(--scalar-border-color, #3e3e4a);
+                border-radius: 6px;
+                color: var(--scalar-color-1, #fff);
+                font-size: 13px;
+                box-sizing: border-box;
+                transition: border-color 150ms ease;
+            }
+
+            .custom-auth-popover input:focus {
+                border-color: var(--scalar-color-primary, #3b82f6);
+                outline: none;
+            }
+
+            /* Monospace Token Box */
+            .custom-auth-popover textarea {
+                width: 100%;
+                height: 90px;
+                padding: 10px;
+                background: var(--scalar-background-2, #0f0f11);
+                border: 1px solid var(--scalar-border-color, #3e3e4a);
+                border-radius: 6px;
+                color: var(--scalar-color-2, #d1d5db);
+                font-family: var(--scalar-font-code, monospace);
+                font-size: 11px;
+                resize: none;
+                margin-bottom: 16px;
+                box-sizing: border-box;
+                user-select: all;
+            }
+
+            .custom-auth-popover textarea:focus {
+                border-color: var(--scalar-color-primary, #3b82f6);
+                outline: none;
+            }
+
+            .custom-auth-action-row {
+                display: flex;
+                gap: 10px;
+                width: 100%;
+            }
+
+            .custom-auth-popover button.form-btn {
+                width: 100%;
+                padding: 11px;
+                background: var(--scalar-color-primary, #3b82f6);
+                border: none;
+                border-radius: 6px;
+                color: #fff;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: background 150ms ease, transform 100ms cubic-bezier(0.23, 1, 0.32, 1);
+            }
+
+            .custom-auth-popover button.form-btn:hover {
+                background: var(--scalar-color-primary-hover, #2563eb);
+            }
+
+            .custom-auth-popover button.form-btn:active {
+                transform: scale(0.97);
+            }
+
+            .custom-auth-popover button.form-btn.secondary {
+                background: var(--scalar-background-3, #272733);
+                border: 1px solid var(--scalar-border-color, #3e3e4a);
+                color: var(--scalar-color-1, #fff);
+            }
+
+            .custom-auth-popover button.form-btn.secondary:hover {
+                background: var(--scalar-background-2, #1e1e24);
+                border-color: var(--scalar-color-primary, #3b82f6);
+            }
+
+            .custom-auth-popover button.form-btn.copied {
+                background: rgba(16, 185, 129, 0.15);
+                border: 1px solid #10b981;
+                color: #10b981;
+            }
+
+            .custom-auth-status {
+                margin-top: 12px;
+                font-size: 12px;
+                color: var(--scalar-color-2, #9ca3af);
+                text-align: center;
+                min-height: 18px;
+            }
+        `;
+
+        function initializeWidget() {
+            // Find sidebar container using multiple selector and geometry fallbacks
+            const sidebar = findInShadows('aside') ||
+                findInShadows('.sidebar') ||
+                findInShadows('[class*=sidebar]') ||
+                findInShadows('.scalar-sidebar') ||
+                findInShadows('.scalar-app-layout-sidebar') ||
+                findInShadows('.sidebar-content') ||
+                findSidebarByGeometry();
+
+            if (sidebar) {
+                // Prevent duplicate rendering
+                if (document.getElementById('custom-auth-trigger-container')) return true;
+
+                // Inject styles into target DOM root (ShadowRoot or Document.head)
+                const targetRoot = sidebar.getRootNode();
+                const isShadow = targetRoot && targetRoot.nodeType === 11; // 11 is DocumentFragment (ShadowRoot)
+                const styleParent = isShadow ? targetRoot : (document.head || document.body);
+
+                if (styleParent && !styleParent.querySelector('#custom-auth-styles')) {
+                    const styleTag = document.createElement('style');
+                    styleTag.id = 'custom-auth-styles';
+                    styleTag.textContent = cssRules;
+                    styleParent.appendChild(styleTag);
+                }
+
+                // 1. Create trigger button (Always Authenticate)
+                const triggerContainer = document.createElement('div');
+                triggerContainer.id = 'custom-auth-trigger-container';
+                triggerContainer.className = 'custom-auth-trigger-container';
+                triggerContainer.innerHTML = `
+                    <button class="custom-auth-trigger">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 2C9.24 2 7 4.24 7 7V9H6C4.9 9 4 9.9 4 11V21C4 22.1 4.9 23 6 23H18C19.1 23 20 22.1 20 21V11C20 9.9 19.1 9 18 9H17V7C17 4.24 14.76 2 12 2M12 4C13.66 4 15 5.34 15 7V9H9C9 7 10.34 4 12 4M12 14C13.1 14 14 14.9 14 16C14 17.1 13.1 18 12 18C10.9 18 10 17.1 10 16C10 14.9 10.9 14 12 14Z" />
+                        </svg>
+                        Authenticate
+                    </button>
+                `;
+
+                // Add button at the very top of the sidebar
+                sidebar.insertBefore(triggerContainer, sidebar.firstChild);
+
+                // 2. Create popover dialog and backdrop
+                const overlay = document.createElement('div');
+                overlay.className = 'custom-auth-overlay';
+                document.body.appendChild(overlay);
+
+                const popover = document.createElement('div');
+                popover.className = 'custom-auth-popover';
+                popover.innerHTML = `
+                    <!-- Login State View -->
+                    <div id="custom-auth-login-view">
+                        <h3>Authenticate API</h3>
+                        <p>Log in with system credentials to automatically authorize all endpoint requests.</p>
+                        <input type="text" id="custom-auth-username" placeholder="Username or Email" />
+                        <input type="password" id="custom-auth-password" placeholder="Password" />
+                        <button id="custom-auth-btn" class="form-btn">Authenticate</button>
+                    </div>
+                    
+                    <!-- Token Result View -->
+                    <div id="custom-auth-token-view" style="display: none;">
+                        <h3>Token Generated</h3>
+                        <p>The authentication token was generated successfully. Copy it below or apply it to the documentation.</p>
+                        <textarea id="custom-auth-generated-token" readonly></textarea>
+                        <div class="custom-auth-action-row">
+                            <button id="custom-auth-copy-btn" class="form-btn">Copy Token</button>
+                            <button id="custom-auth-close-btn" class="form-btn secondary">Close & Apply</button>
+                        </div>
+                    </div>
+                    
+                    <div class="custom-auth-status" id="custom-auth-status"></div>
+                `;
+                document.body.appendChild(popover);
+
+                // Ensure light DOM has popover styling (since popover/overlay are placed in document.body)
+                if (!document.getElementById('custom-auth-styles-body')) {
+                    const bodyStyle = document.createElement('style');
+                    bodyStyle.id = 'custom-auth-styles-body';
+                    bodyStyle.textContent = cssRules;
+                    document.head.appendChild(bodyStyle);
+                }
+
+                // 3. Setup event listeners
+                const triggerBtn = triggerContainer.querySelector('.custom-auth-trigger');
+                let activeToken = '';
+
+                const openAuth = () => {
+                    overlay.classList.add('open');
+                    popover.classList.add('open');
+
+                    // Reset modal state to Login View on open
+                    document.getElementById('custom-auth-login-view').style.display = 'block';
+                    document.getElementById('custom-auth-token-view').style.display = 'none';
+                    document.getElementById('custom-auth-status').innerText = '';
+
+                    setTimeout(() => {
+                        const userField = document.getElementById('custom-auth-username');
+                        if (userField) userField.focus();
+                    }, 50);
+                };
+
+                const closeAuth = () => {
+                    overlay.classList.remove('open');
+                    popover.classList.remove('open');
+                };
+
+                triggerBtn.addEventListener('click', openAuth);
+                overlay.addEventListener('click', closeAuth);
+
+                window.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') closeAuth();
+                });
+
+                // Authenticate Action inside modal
+                document.getElementById('custom-auth-btn').addEventListener('click', async () => {
+                    const username = document.getElementById('custom-auth-username').value.trim();
+                    const password = document.getElementById('custom-auth-password').value;
+                    const status = document.getElementById('custom-auth-status');
+
+                    if (!username || !password) {
+                        status.innerText = 'Username and Password required';
+                        status.style.color = '#ef4444';
+                        return;
+                    }
+
+                    status.innerText = 'Authenticating...';
+                    status.style.color = '#f59e0b';
+
+                    try {
+                        const response = await fetch('/api/auth/v1/User/authenticate', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ username, password })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Authentication failed (HTTP ' + response.status + ')');
+                        }
+
+                        const data = await response.json();
+                        activeToken = data.token?.value || data.Token?.value || data.token || data.value;
+
+                        if (!activeToken) {
+                            throw new Error('No token found in authentication response.');
+                        }
+
+                        const authObj = {
+                            'Bearer': {
+                                'token': activeToken
+                            },
+                            'bearer': {
+                                'token': activeToken
+                            }
+                        };
+
+                        localStorage.setItem('scalar_auth_schemes', JSON.stringify(authObj));
+                        localStorage.setItem('scalar-reference-auth-schemes', JSON.stringify(authObj));
+                        localStorage.setItem('api-1-scalar-reference-auth-schemes', JSON.stringify(authObj));
+
+                        status.innerText = 'Authentication successful!';
+                        status.style.color = '#10b981';
+
+                        // Switch Views in Modal
+                        setTimeout(() => {
+                            document.getElementById('custom-auth-login-view').style.display = 'none';
+                            document.getElementById('custom-auth-token-view').style.display = 'block';
+                            document.getElementById('custom-auth-generated-token').value = activeToken;
+                            document.getElementById('custom-auth-generated-token').focus();
+                            document.getElementById('custom-auth-generated-token').select();
+                            status.innerText = '';
+                        }, 500);
+
+                    } catch (err) {
+                        status.innerText = 'Error: ' + err.message;
+                        status.style.color = '#ef4444';
+                    }
+                });
+
+                // Copy Action inside Modal
+                document.getElementById('custom-auth-copy-btn').addEventListener('click', async (e) => {
+                    const copyBtn = e.currentTarget;
+                    const tokenTextarea = document.getElementById('custom-auth-generated-token');
+
+                    try {
+                        await navigator.clipboard.writeText(tokenTextarea.value);
+
+                        copyBtn.innerText = 'Copied!';
+                        copyBtn.classList.add('copied');
+
+                        setTimeout(() => {
+                            copyBtn.innerText = 'Copy Token';
+                            copyBtn.classList.remove('copied');
+                        }, 1500);
+                    } catch (err) {
+                        // Fallback manual copy
+                        tokenTextarea.select();
+                        document.execCommand('copy');
+
+                        copyBtn.innerText = 'Copied!';
+                        copyBtn.classList.add('copied');
+
+                        setTimeout(() => {
+                            copyBtn.innerText = 'Copy Token';
+                            copyBtn.classList.remove('copied');
+                        }, 1500);
+                    }
+                });
+
+                // Close and Apply (Reload page)
+                document.getElementById('custom-auth-close-btn').addEventListener('click', () => {
+                    closeAuth();
+                    window.location.reload();
+                });
+
+                return true;
+            }
+            return false;
+        }
+
+        // Periodically attempt to find the sidebar and initialize the widget
+        const intervalId = setInterval(() => {
+            if (initializeWidget()) {
+                clearInterval(intervalId);
+            }
+        }, 300);
+
+        // Also attempt immediately on DOMContentLoaded/load
+        if (document.readyState === 'loading') {
+            window.addEventListener('DOMContentLoaded', initializeWidget);
+        } else {
+            initializeWidget();
+        }
+        window.addEventListener('load', initializeWidget);
+    })();
+</script>

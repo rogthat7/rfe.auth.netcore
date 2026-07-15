@@ -8,6 +8,6 @@ namespace RFE.Auth.Core.Interfaces.Services
     public interface IEmailSender
     {
        Task<bool> SendUserConfirmationEmail(AuthUser user, string role = "appUser", string appId = "rfe-auth");
-        
+       Task<bool> SendGeneralEmail(string to, string subject, string body);
     }
 }

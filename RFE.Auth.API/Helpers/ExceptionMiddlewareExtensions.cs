@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using RFE.Auth.Core.Models.Shared;
 
-namespace RFE.Auth.API.Heplers
+namespace RFE.Auth.API.Helpers
 {
     /// <summary>
     /// ExceptionMiddlewareExtensions

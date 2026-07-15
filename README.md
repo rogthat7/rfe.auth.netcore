@@ -11,7 +11,9 @@ This project is a modern, high-performance C# .NET 10.0 Web API authentication s
 - **Data Access Layer**: 
   - **Entity Framework Core 10.0**: Used for DB context mapping, database schema generation, and startup migrations.
   - **Dapper**: High-performance micro-ORM used in the repositories (`UserRepository`, `AuthRepository`) for executing fast database-agnostic ANSI-SQL queries.
-- **API Documentation**: **Scalar API Reference** integrated directly at `http://localhost/scalar`.
+- **OAuth 2.1 & OpenID Connect**: **OpenIddict** is used to configure our API as a secure Authorization Server.
+- **Federated Login**: **Google Authentication** is integrated into the sign-in flow.
+- **API Documentation**: **Scalar API Reference** integrated directly at `http://localhost/scalar/v1`.
 
 ---
 
@@ -36,7 +38,7 @@ This project is a modern, high-performance C# .NET 10.0 Web API authentication s
 
 The project includes integrated **Scalar API Documentation** for interactive testing. 
 Once the containers are running, open your web browser and navigate to:
-👉 **`http://localhost/scalar`**
+👉 **`http://localhost/scalar/v1`**
 
 ---
 
@@ -50,7 +52,14 @@ This project was recently modernized from an older legacy stack:
    - Updated `UnitOfWork.cs` to construct `NpgsqlConnection` instead of `SqlConnection`.
    - Switched from SQL Server-specific stored procedures (`AUTH.spr_*`) to database-agnostic standard ANSI-SQL queries mapped directly in Dapper repositories.
    - Rebuilt Entity Framework Core migrations specifically for PostgreSQL (`RFE.Auth.API/Migrations`).
-3. **Docker Configurations**:
-   - Replaced MS SQL Server docker container with PostgreSQL alpine container.
-   - Replaced Windows-style backslashes in `.dockerignore` with forward slashes for Linux Docker compatibility.
-   - Updated port mapping to target the new .NET 10.0 container default port (`8080`).
+4. **OAuth 2.1 & Google Federated Authentication**:
+   - Integrated **OpenIddict** as the OAuth 2.1 framework.
+   - Overrode `OnModelCreating` in `UserContext` to call `modelBuilder.UseOpenIddict()`, and generated database migrations specifically for the OpenIddict schema (`AddOpenIddict` migration).
+   - Configured Cookie, Google, and OpenIddict server/validation middlewares inside `Startup.cs`.
+   - Created `AuthorizationController` containing standard endpoints for `/connect/authorize` (including a custom user consent screen) and `/connect/token` (verifying PKCE verifiers).
+   - Created `GoogleAuthController` to handle the Google challenge and callback redirects.
+   - Seeded a default external client (`mock-external-app` / `mock-client-secret`) during database initialization.
+5. **Startup Refactoring & Modernization**:
+   * Created `ServiceCollectionExtensions` to package services, repositories, DB contexts, option configurations, OpenIddict, Google Auth, and Swagger/Scalar setups into cleanly chained, fluent extension methods.
+   * Cleaned up `Startup.cs` to call these extensions, reducing file complexity from ~300 lines to a highly readable and modular format.
+   * Fixed legacy routing calls (`app.UseMvc()`) to use modern endpoint routing, enabling the Scalar documentation mapping to be correctly resolved.

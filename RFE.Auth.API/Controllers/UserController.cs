@@ -38,20 +38,20 @@ namespace RFE.Auth.API.Controllers
         private readonly ISmsSender _smsSender;
 
         /// <summary>
-        /// AuthUserController
+        /// UserController
         /// </summary>
-        /// <param name="authService"></param>
         /// <param name="authuserService"></param>
+        /// <param name="jwtAuthService"></param>
         /// <param name="mapper"></param>
         /// <param name="emailSender"></param>
         /// <param name="smsSender"></param>
-        public UserController(  IAuthService authService, 
-                                IUserService authuserService,
-                                IJwtAuthenticationService jwtAuthService, 
-                                IMapper mapper, 
-                                IEmailSender emailSender, 
-                                ISmsSender smsSender,
-                                IOptions<JwtOptions> jwtoptions): base (jwtoptions)
+        /// <param name="jwtoptions"></param>
+        public UserController(  IUserService authuserService,
+                                 IJwtAuthenticationService jwtAuthService, 
+                                 IMapper mapper,
+                                 IEmailSender emailSender,
+                                 ISmsSender smsSender,
+                                 IOptions<JwtOptions> jwtoptions): base (jwtoptions)
         {
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
@@ -151,211 +151,6 @@ namespace RFE.Auth.API.Controllers
                 Status = "OK"
             });
 
-        }
-        /// <summary>
-        /// SendEmailTest
-        /// </summary>
-        /// <param name="emailMessage"></param>
-        /// <returns></returns>
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status500InternalServerError)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
-        [SwaggerRequestExample(typeof(SendEmailDto), typeof(SendEmailModelExample))]
-        [Authorize]
-        [HttpPost("sendconfirmationemail")]
-        public async Task<ActionResult> SendConfirmationEmail([FromBody] SendEmailDto sendEmailDto)
-        {
-            var model = _mapper.Map<AuthUser>(sendEmailDto);
-            model.Password = EncryptionHelper.EncodePasswordToBase64(model.Password);
-            var message = await _emailSender.SendUserConfirmationEmail(model);
-            return Ok(message);
-        }
-        /// <summary>
-        /// SendEmailTest
-        /// </summary>
-        /// <param name="emailMessage"></param>
-        /// <returns></returns>
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status500InternalServerError)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
-        [SwaggerRequestExample(typeof(SendEmailDto), typeof(string))]
-        [AllowAnonymous]
-        [HttpGet("confirmuserwithconfirmationlink")]
-        public async Task<ActionResult> ConfirmUserWithEmailLink([FromQuery] string tokenPayload)
-        {
-            var handler = new JwtSecurityTokenHandler();
-            JwtSecurityToken jwtSecurityToken;
-            try { jwtSecurityToken = handler.ReadJwtToken(tokenPayload); }
-            catch { return BadRequest("Invalid token payload"); }
-
-            if(!ValidateToken(jwtSecurityToken))
-                return BadRequest("Token expired or invalid. Please register again.");
-
-            var payload = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "payload").Value?.ToString();
-            var roleClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "role").Value?.ToString() ?? "appUser";
-            var appClaim  = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "app").Value?.ToString()  ?? "rfe-auth";
-
-            if (string.IsNullOrEmpty(payload))
-                return BadRequest("Invalid token content");
-
-            var model = JsonConvert.DeserializeObject<AuthUser>(payload);
-            try
-            {
-                await _authuserService.AddNewAuthUser(model, roleClaim, appClaim);
-                await _authuserService.MarkUserAsVerified(model.Username);
-            }
-            catch (Exception ex)
-            {
-                if (ex.Message.Contains("23505") || ex.InnerException?.Message.Contains("23505") == true ||
-                    ex.Message.Contains("unique constraint") || ex.InnerException?.Message.Contains("unique constraint") == true)
-                {
-                    return BadRequest("User already exists or has been verified by another session.");
-                }
-                throw;
-            }
-
-            return Redirect("http://localhost:3001/verify-email?status=confirmed");
-        }
-
-        /// <summary>
-        /// SendConfirmationPhone
-        /// </summary>
-        /// <param name="sendPhoneDto"></param>
-        /// <returns></returns>
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status500InternalServerError)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
-        [AllowAnonymous]
-        [HttpPost("sendconfirmationphone")]
-        public async Task<ActionResult> SendConfirmationPhone([FromBody] SendPhoneDto sendPhoneDto)
-        {
-            var model = _mapper.Map<AuthUser>(sendPhoneDto);
-            model.Password = EncryptionHelper.EncodePasswordToBase64(model.Password);
-
-            // Generate a random 6-digit code
-            var random = new Random();
-            var code = random.Next(100000, 999999).ToString();
-
-            // Store user details and verification code in JWT payload
-            var securityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(System.Text.Encoding.ASCII.GetBytes(_jwtOptions.Value.JwtKeyForEmail));
-            var credentials = new Microsoft.IdentityModel.Tokens.SigningCredentials(securityKey, Microsoft.IdentityModel.Tokens.SecurityAlgorithms.HmacSha256Signature);
-
-            var claims = new[] {
-                new System.Security.Claims.Claim("payload", JsonConvert.SerializeObject(model)),
-                new System.Security.Claims.Claim("code", code),
-                new System.Security.Claims.Claim("role", sendPhoneDto.Role ?? "appUser")
-            };
-            
-            var token = new JwtSecurityToken(
-                _jwtOptions.Value.Issuer,
-                null,
-                claims,
-                DateTime.UtcNow,
-                expires: DateTime.UtcNow.AddMinutes(5), // 5 minutes validity
-                signingCredentials: credentials
-            );
-            
-            var jwtPayLoad = new JwtSecurityTokenHandler().WriteToken(token);
-
-            // Send confirmation SMS
-            var messageSent = await _smsSender.SendUserConfirmationSms(model, code);
-            if (!messageSent)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, "Error sending SMS");
-            }
-
-            return Ok(new 
-            {
-                Message = "Verification code sent to phone number",
-                TokenPayload = jwtPayLoad,
-                Status = "OK"
-            });
-        }
-
-        /// <summary>
-        /// ConfirmUserWithPhone
-        /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status500InternalServerError)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
-        [AllowAnonymous]
-        [HttpPost("confirmuserwithphone")]
-        public async Task<ActionResult> ConfirmUserWithPhone([FromBody] ConfirmPhoneRequest request)
-        {
-            if (request == null || string.IsNullOrEmpty(request.TokenPayload) || string.IsNullOrEmpty(request.Code))
-            {
-                return BadRequest("Invalid request parameters");
-            }
-
-            var handler = new JwtSecurityTokenHandler();
-            JwtSecurityToken jwtSecurityToken;
-            try
-            {
-                jwtSecurityToken = handler.ReadJwtToken(request.TokenPayload);
-            }
-            catch (Exception)
-            {
-                return BadRequest("Invalid token payload");
-            }
-
-            if (!ValidateToken(jwtSecurityToken))
-            {
-                return BadRequest("Token expired or invalid, please register again");
-            }
-
-            // Verify code
-            var codeClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "code").Value?.ToString();
-            if (codeClaim != request.Code)
-            {
-                return BadRequest("Verification code is incorrect");
-            }
-
-            var payloadClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "payload").Value?.ToString();
-            if (string.IsNullOrEmpty(payloadClaim))
-            {
-                return BadRequest("Invalid token content");
-            }
-
-            var roleClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "role").Value?.ToString() ?? "appUser";
-
-            var appClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "app").Value?.ToString() ?? "rfe-auth";
-
-            var model = JsonConvert.DeserializeObject<AuthUser>(payloadClaim);
-            try
-            {
-                await _authuserService.AddNewAuthUser(model, roleClaim, appClaim);
-                await _authuserService.MarkUserAsVerified(model.Username);
-            }
-            catch (Exception ex)
-            {
-                if (ex.Message.Contains("23505") || ex.InnerException?.Message.Contains("23505") == true ||
-                    ex.Message.Contains("unique constraint") || ex.InnerException?.Message.Contains("unique constraint") == true)
-                {
-                    return BadRequest("User already exists or has been verified by another session.");
-                }
-                throw;
-            }
-
-            return Ok(new
-            {
-                success = true,
-                message = "Phone verified! Account created successfully.",
-                status = "OK"
-            });
         }
 
         /// <summary>
@@ -559,6 +354,131 @@ namespace RFE.Auth.API.Controllers
                 AppId    = "rfe-auth"
             };
             return await Register(registerModel);
+        }
+
+        /// <summary>
+        /// ConfirmUserWithEmailLink — validates the JWT confirmation link from the email and activates the user.
+        /// </summary>
+        /// <param name="tokenPayload"></param>
+        /// <returns></returns>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
+        [AllowAnonymous]
+        [HttpGet("confirmuserwithconfirmationlink")]
+        public async Task<ActionResult> ConfirmUserWithEmailLink([FromQuery] string tokenPayload)
+        {
+            var handler = new JwtSecurityTokenHandler();
+            JwtSecurityToken jwtSecurityToken;
+            try { jwtSecurityToken = handler.ReadJwtToken(tokenPayload); }
+            catch { return BadRequest("Invalid token payload"); }
+
+            if (!ValidateToken(jwtSecurityToken))
+                return BadRequest("Token expired or invalid. Please register again.");
+
+            var payload = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "payload").Value?.ToString();
+            var roleClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "role").Value?.ToString() ?? "appUser";
+            var appClaim  = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "app").Value?.ToString()  ?? "rfe-auth";
+
+            if (string.IsNullOrEmpty(payload))
+                return BadRequest("Invalid token content");
+
+            var model = JsonConvert.DeserializeObject<AuthUser>(payload);
+            try
+            {
+                await _authuserService.AddNewAuthUser(model, roleClaim, appClaim);
+                await _authuserService.MarkUserAsVerified(model.Username);
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("23505") || ex.InnerException?.Message.Contains("23505") == true ||
+                    ex.Message.Contains("unique constraint") || ex.InnerException?.Message.Contains("unique constraint") == true)
+                {
+                    return BadRequest("User already exists or has been verified by another session.");
+                }
+                throw;
+            }
+
+            return Redirect("http://localhost:3001/verify-email?status=confirmed");
+        }
+
+        /// <summary>
+        /// ConfirmUserWithPhone — validates the OTP code and activates the user account.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
+        [AllowAnonymous]
+        [HttpPost("confirmuserwithphone")]
+        public async Task<ActionResult> ConfirmUserWithPhone([FromBody] ConfirmPhoneRequest request)
+        {
+            if (request == null || string.IsNullOrEmpty(request.TokenPayload) || string.IsNullOrEmpty(request.Code))
+            {
+                return BadRequest("Invalid request parameters");
+            }
+
+            var handler = new JwtSecurityTokenHandler();
+            JwtSecurityToken jwtSecurityToken;
+            try
+            {
+                jwtSecurityToken = handler.ReadJwtToken(request.TokenPayload);
+            }
+            catch (Exception)
+            {
+                return BadRequest("Invalid token payload");
+            }
+
+            if (!ValidateToken(jwtSecurityToken))
+            {
+                return BadRequest("Token expired or invalid, please register again");
+            }
+
+            // Verify code
+            var codeClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "code").Value?.ToString();
+            if (codeClaim != request.Code)
+            {
+                return BadRequest("Verification code is incorrect");
+            }
+
+            var payloadClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "payload").Value?.ToString();
+            if (string.IsNullOrEmpty(payloadClaim))
+            {
+                return BadRequest("Invalid token content");
+            }
+
+            var roleClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "role").Value?.ToString() ?? "appUser";
+            var appClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "app").Value?.ToString() ?? "rfe-auth";
+
+            var model = JsonConvert.DeserializeObject<AuthUser>(payloadClaim);
+            try
+            {
+                await _authuserService.AddNewAuthUser(model, roleClaim, appClaim);
+                await _authuserService.MarkUserAsVerified(model.Username);
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("23505") || ex.InnerException?.Message.Contains("23505") == true ||
+                    ex.Message.Contains("unique constraint") || ex.InnerException?.Message.Contains("unique constraint") == true)
+                {
+                    return BadRequest("User already exists or has been verified by another session.");
+                }
+                throw;
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "Phone verified! Account created successfully.",
+                status = "OK"
+            });
         }
     }
 

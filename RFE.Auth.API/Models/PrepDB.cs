@@ -20,6 +20,7 @@ namespace RFE.Auth.API.Models
             using (var serviceScope = app.ApplicationServices.CreateScope())
             {
                 SeedData(serviceScope.ServiceProvider.GetService<DatabaseContext>());
+                SeedOpenIddictClientsAsync(serviceScope.ServiceProvider).GetAwaiter().GetResult();
             }
         }
 
@@ -181,6 +182,37 @@ namespace RFE.Auth.API.Models
                 iterationCount: 100000,
                 numBytesRequested: 256 / 8));
             return hashed;
+        }
+
+        private static async System.Threading.Tasks.Task SeedOpenIddictClientsAsync(IServiceProvider serviceProvider)
+        {
+            var manager = serviceProvider.GetRequiredService<OpenIddict.Abstractions.IOpenIddictApplicationManager>();
+
+            if (await manager.FindByClientIdAsync("mock-external-app") == null)
+            {
+                await manager.CreateAsync(new OpenIddict.Abstractions.OpenIddictApplicationDescriptor
+                {
+                    ClientId = "mock-external-app",
+                    ClientSecret = "mock-client-secret",
+                    DisplayName = "Mock External Application",
+                    Permissions =
+                    {
+                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.Endpoints.Authorization,
+                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.Endpoints.Token,
+                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
+                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.ResponseTypes.Code,
+                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.Scopes.Email,
+                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.Scopes.Profile,
+                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.Prefixes.Scope + "api"
+                    },
+                    RedirectUris =
+                    {
+                        new Uri("https://oauth.pstmn.io/v1/callback"),
+                        new Uri("http://localhost:3001/oauth-callback")
+                    }
+                });
+            }
         }
     }
 }

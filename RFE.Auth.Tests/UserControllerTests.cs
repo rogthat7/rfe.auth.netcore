@@ -19,7 +19,6 @@ namespace RFE.Auth.Tests
     [TestFixture]
     public class UserControllerTests
     {
-        private Mock<IAuthService> _authServiceMock;
         private Mock<IUserService> _userServiceMock;
         private Mock<IJwtAuthenticationService> _jwtAuthServiceMock;
         private Mock<IMapper> _mapperMock;
@@ -31,7 +30,6 @@ namespace RFE.Auth.Tests
         [SetUp]
         public void Setup()
         {
-            _authServiceMock = new Mock<IAuthService>();
             _userServiceMock = new Mock<IUserService>();
             _jwtAuthServiceMock = new Mock<IJwtAuthenticationService>();
             _mapperMock = new Mock<IMapper>();
@@ -52,7 +50,6 @@ namespace RFE.Auth.Tests
                 .ReturnsAsync(new List<AuthUserByIdGetResponse>());
 
             _controller = new UserController(
-                _authServiceMock.Object,
                 _userServiceMock.Object,
                 _jwtAuthServiceMock.Object,
                 _mapperMock.Object,

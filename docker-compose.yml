@@ -22,6 +22,9 @@ services:
     container_name: rfe-auth-api
     ports:
       - "80:8080"
+    environment:
+      - ConnectionStrings__DefaultConection=Host=db;Port=5432;Database=rfe-auth;Username=postgres;Password=YourStrongPassword123!
+      - PostgresDockerConfig__PostgresServer=db
   rfe-auth-web:
     build:
       context: ./rfe.auth.web

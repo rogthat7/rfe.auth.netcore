@@ -148,7 +148,14 @@ Any string works as a custom agent type.
 - ALWAYS verify build succeeds before committing
 
 ```bash
-npm run build && npm test
+# Backend (.NET 10.0)
+dotnet build
+dotnet test
+
+# Frontend (React/Vite)
+cd rfe.auth.web
+npm run build
+npm run test
 ```
 
 ## CLI Quick Reference
