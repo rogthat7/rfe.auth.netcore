@@ -43,6 +43,12 @@ server { \
         proxy_set_header X-Real-IP $remote_addr; \
         proxy_ssl_verify off; \
     } \
+    location /signin-google { \
+        proxy_pass https://rfe-auth-api:5001; \
+        proxy_set_header Host $http_host; \
+        proxy_set_header X-Real-IP $remote_addr; \
+        proxy_ssl_verify off; \
+    } \
 }' > /etc/nginx/conf.d/default.conf
 EXPOSE 443
 CMD ["nginx", "-g", "daemon off;"]

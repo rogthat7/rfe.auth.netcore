@@ -37,11 +37,11 @@ namespace RFE.Auth.API.Controllers
         /// <returns>A ChallengeResult redirecting to Google's authentication portal.</returns>
         [HttpGet("login")]
         [AllowAnonymous]
-        public IActionResult Login(string redirectUri = "/")
+        public IActionResult Login(string redirectUri = "/", string role = "authUser")
         {
             var properties = new AuthenticationProperties
             {
-                RedirectUri = Url.Action(nameof(Callback), new { redirectUri })
+                RedirectUri = Url.Action(nameof(Callback), new { redirectUri, role })
             };
             return Challenge(properties, GoogleDefaults.AuthenticationScheme);
         }
@@ -53,7 +53,7 @@ namespace RFE.Auth.API.Controllers
         /// <returns>Redirects to the specified redirect URI, or returns Bad Request if federated authentication failed.</returns>
         [HttpGet("callback")]
         [AllowAnonymous]
-        public async Task<IActionResult> Callback(string redirectUri = "/")
+        public async Task<IActionResult> Callback(string redirectUri = "/", string role = "authUser")
         {
             var result = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
             if (!result.Succeeded)
@@ -81,7 +81,7 @@ namespace RFE.Auth.API.Controllers
                     IsVerified = true
                 };
 
-                await _userService.AddNewAuthUser(dbUser, "appUser");
+                await _userService.AddNewAuthUser(dbUser, role);
                 
                 dbUser = await _context.AuthUsers.FirstOrDefaultAsync(u => u.Email == email);
             }
@@ -91,7 +91,7 @@ namespace RFE.Auth.API.Controllers
                 new Claim(ClaimTypes.NameIdentifier, dbUser.UserId?.ToString() ?? ""),
                 new Claim(ClaimTypes.Name, dbUser.Username),
                 new Claim(ClaimTypes.Email, dbUser.Email),
-                new Claim(ClaimTypes.Role, "appUser")
+                new Claim(ClaimTypes.Role, role)
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

@@ -343,8 +343,9 @@ namespace RFE.Auth.API.Controllers
         /// </summary>
         [AllowAnonymous]
         [HttpPost("/api/auth/logout")]
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
+            await HttpContext.SignOutAsync(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme);
             return Ok(new { Message = "Logged out successfully" });
         }
 

@@ -26,8 +26,10 @@ services:
       - ConnectionStrings__DefaultConection=Host=db;Port=5432;Database=rfe-auth;Username=postgres;Password=YourStrongPassword123!
       - PostgresDockerConfig__PostgresServer=db
       - ASPNETCORE_URLS=https://+:5001
-      - Authentication__Github__ClientId=Ov23liJZDaU28KKZfKb5
-      - Authentication__Github__ClientSecret=cfe36dd07bfe9deed6375b7b60e6bdd08088bd03
+      - Authentication__Github__ClientId=${GITHUB_CLIENT_ID}
+      - Authentication__Github__ClientSecret=${GITHUB_CLIENT_SECRET}
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
+      - Authentication__Google__ClientSecret=${GOOGLE_CLIENT_SECRET}
     volumes:
       - ./certs:/certs
   rfe-auth-web:

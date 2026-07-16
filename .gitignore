@@ -13,6 +13,7 @@ agents/
 *.log
 
 # ==========================================
-# Local Development Scripts
+# Local Development Scripts & Configs
 # ==========================================
 cleanup-db.ps1
+.env
