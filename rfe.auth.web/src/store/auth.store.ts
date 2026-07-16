@@ -14,7 +14,6 @@ interface AuthState {
 function decodeJwt(token: string): CurrentUser | null {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
-    console.log(payload)
     let appsArray: string[] = []
     if (payload.apps) {
       if (Array.isArray(payload.apps)) {
