@@ -188,30 +188,40 @@ namespace RFE.Auth.API.Models
         {
             var manager = serviceProvider.GetRequiredService<OpenIddict.Abstractions.IOpenIddictApplicationManager>();
 
-            if (await manager.FindByClientIdAsync("mock-external-app") == null)
+            var app = await manager.FindByClientIdAsync("mock-external-app");
+            var descriptor = new OpenIddict.Abstractions.OpenIddictApplicationDescriptor
             {
-                await manager.CreateAsync(new OpenIddict.Abstractions.OpenIddictApplicationDescriptor
+                ClientId = "mock-external-app",
+                DisplayName = "Mock External Application",
+                ClientType = OpenIddict.Abstractions.OpenIddictConstants.ClientTypes.Public,
+                Permissions =
                 {
-                    ClientId = "mock-external-app",
-                    ClientSecret = "mock-client-secret",
-                    DisplayName = "Mock External Application",
-                    Permissions =
-                    {
-                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.Endpoints.Authorization,
-                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.Endpoints.Token,
-                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
-                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
-                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.ResponseTypes.Code,
-                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.Scopes.Email,
-                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.Scopes.Profile,
-                        OpenIddict.Abstractions.OpenIddictConstants.Permissions.Prefixes.Scope + "api"
-                    },
-                    RedirectUris =
-                    {
-                        new Uri("https://oauth.pstmn.io/v1/callback"),
-                        new Uri("http://localhost:3001/oauth-callback")
-                    }
-                });
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Endpoints.Authorization,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Endpoints.Token,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.ResponseTypes.Code,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Scopes.Email,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Scopes.Profile,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Prefixes.Scope + "openid",
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Prefixes.Scope + "api"
+                },
+                RedirectUris =
+                {
+                    new Uri("https://oauth.pstmn.io/v1/callback"),
+                    new Uri("http://localhost:3001/oauth-callback"),
+                    new Uri("https://localhost:3001/oauth-callback"),
+                    new Uri("https://localhost:5173/oauth-callback")
+                }
+            };
+
+            if (app == null)
+            {
+                await manager.CreateAsync(descriptor);
+            }
+            else
+            {
+                await manager.UpdateAsync(app, descriptor);
             }
         }
     }

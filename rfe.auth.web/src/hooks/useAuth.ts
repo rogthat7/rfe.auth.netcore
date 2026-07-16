@@ -46,7 +46,13 @@ export function useAuth() {
       if (!decoded) throw new Error('Invalid token received')
       setAuth(res.token, decoded)
       toast.success(`Welcome back, ${decoded.name}!`)
-      navigate('/')
+      const searchParams = new URLSearchParams(window.location.search)
+      const returnUrl = searchParams.get('ReturnUrl')
+      if (returnUrl) {
+        window.location.href = returnUrl
+      } else {
+        navigate('/')
+      }
     } catch (err) {
       if (err instanceof UnverifiedError) {
         toast.warning('Account not verified. Please verify to continue.')

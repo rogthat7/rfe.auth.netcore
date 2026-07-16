@@ -15,6 +15,23 @@ import { applicationService } from '../../../services/application.service'
 import type { Application } from '../../../types/application.types'
 import styles from './Register.module.css'
 
+function GithubIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={size}
+      height={size}
+      stroke="currentColor"
+      strokeWidth="2"
+      fill="none"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+    </svg>
+  )
+}
+
 const ALLOWED_ROLES = [
   { value: 'Labourer', label: 'Labourer' },
   { value: 'JobCreator', label: 'Job Creator' },
@@ -24,6 +41,11 @@ export default function Register() {
   const { register: registerUser } = useAuth()
   const [loading, setLoading] = useState(false)
   const [apps, setApps] = useState<Application[]>([])
+
+  function handleGithubLogin() {
+    const apiBaseUrl = import.meta.env.VITE_AUTH_API_URL || window.location.origin
+    window.location.href = `${apiBaseUrl}/api/auth/github/login?redirectUri=${encodeURIComponent(window.location.origin + '/')}`
+  }
 
   const { control, register, handleSubmit, watch, formState: { errors } } =
     useForm<RegisterFormValues>({
@@ -165,6 +187,20 @@ export default function Register() {
 
           <Button type="submit" fullWidth loading={loading}>Create Account</Button>
         </form>
+        <Button
+          type="button"
+          fullWidth
+          onClick={handleGithubLogin}
+          style={{
+            background: '#24292e',
+            borderColor: '#24292e',
+            color: '#ffffff',
+            marginTop: '8px',
+          }}
+        >
+          <GithubIcon size={16} />
+          <span>Sign up with GitHub</span>
+        </Button>
         <p className={styles.footer}>
           Already have an account? <Link to="/login">Sign In</Link>
         </p>

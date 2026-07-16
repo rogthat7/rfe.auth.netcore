@@ -2,6 +2,13 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text.Json;
+using System.Security.Claims;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -57,10 +64,103 @@ namespace RFE.Auth.API.Helpers
                 };
             }).AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options => {
                 options.LoginPath = "/api/auth/login";
+                options.Events = new CookieAuthenticationEvents
+                {
+                    OnRedirectToLogin = context =>
+                    {
+                        var clientUrl = configuration["ClientAppUrl"] ?? "https://localhost:3001";
+                        var originalUrl = context.Request.PathBase + context.Request.Path + context.Request.QueryString;
+                        var redirectUri = clientUrl + "/login?ReturnUrl=" + Uri.EscapeDataString(originalUrl);
+                        context.Response.Redirect(redirectUri);
+                        return Task.CompletedTask;
+                    }
+                };
             }).AddGoogle(options => {
                 options.ClientId = configuration["Authentication:Google:ClientId"] ?? "dummy-id.apps.googleusercontent.com";
                 options.ClientSecret = configuration["Authentication:Google:ClientSecret"] ?? "dummy-secret";
                 options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            }).AddOAuth("GitHub", options => {
+                options.ClientId = configuration["Authentication:Github:ClientId"] ?? "dummy-id";
+                options.ClientSecret = configuration["Authentication:Github:ClientSecret"] ?? "dummy-secret";
+                options.CallbackPath = new PathString("/signin-github");
+                options.AuthorizationEndpoint = "https://github.com/login/oauth/authorize";
+                options.TokenEndpoint = "https://github.com/login/oauth/access_token";
+                options.UserInformationEndpoint = "https://api.github.com/user";
+                options.ClaimsIssuer = "GitHub";
+                options.SaveTokens = true;
+                options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                options.Events = new Microsoft.AspNetCore.Authentication.OAuth.OAuthEvents
+                {
+                    OnCreatingTicket = async context =>
+                    {
+                        using var request = new HttpRequestMessage(HttpMethod.Get, context.Options.UserInformationEndpoint);
+                        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", context.AccessToken);
+                        request.Headers.UserAgent.ParseAdd("rfe-auth-api");
+
+                        using var response = await context.Backchannel.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, context.HttpContext.RequestAborted);
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            throw new HttpRequestException("An error occurred while retrieving the user profile from GitHub.");
+                        }
+
+                        using var user = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                        var root = user.RootElement;
+
+                        var userId = root.GetProperty("id").GetInt64().ToString();
+                        context.Identity.AddClaim(new Claim(ClaimTypes.NameIdentifier, userId, context.Options.ClaimsIssuer));
+
+                        if (root.TryGetProperty("login", out var login))
+                        {
+                            context.Identity.AddClaim(new Claim(ClaimTypes.Name, login.GetString(), context.Options.ClaimsIssuer));
+                        }
+                        if (root.TryGetProperty("name", out var name) && name.ValueKind != JsonValueKind.Null)
+                        {
+                            context.Identity.AddClaim(new Claim("urn:github:name", name.GetString(), context.Options.ClaimsIssuer));
+                        }
+
+                        string emailStr = null;
+                        if (root.TryGetProperty("email", out var email) && email.ValueKind != JsonValueKind.Null && !string.IsNullOrEmpty(email.GetString()))
+                        {
+                            emailStr = email.GetString();
+                        }
+                        else
+                        {
+                            // Fallback to fetch emails
+                            using var emailRequest = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/user/emails");
+                            emailRequest.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                            emailRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", context.AccessToken);
+                            emailRequest.Headers.UserAgent.ParseAdd("rfe-auth-api");
+
+                            using var emailResponse = await context.Backchannel.SendAsync(emailRequest, HttpCompletionOption.ResponseHeadersRead, context.HttpContext.RequestAborted);
+                            if (emailResponse.IsSuccessStatusCode)
+                            {
+                                var emailsJson = await emailResponse.Content.ReadAsStringAsync();
+                                using var emailsDoc = JsonDocument.Parse(emailsJson);
+                                emailStr = emailsDoc.RootElement.EnumerateArray()
+                                    .FirstOrDefault(e => e.GetProperty("verified").GetBoolean() && e.GetProperty("primary").GetBoolean())
+                                    .GetProperty("email").GetString();
+                            }
+                        }
+
+                        if (!string.IsNullOrEmpty(emailStr))
+                        {
+                            context.Identity.AddClaim(new Claim(ClaimTypes.Email, emailStr, context.Options.ClaimsIssuer));
+                        }
+
+                        if (root.TryGetProperty("avatar_url", out var avatarUrl) && avatarUrl.ValueKind != JsonValueKind.Null)
+                        {
+                            context.Identity.AddClaim(new Claim("urn:github:avatar", avatarUrl.GetString(), context.Options.ClaimsIssuer));
+                        }
+                    },
+                    OnRemoteFailure = context =>
+                    {
+                        context.HandleResponse();
+                        var clientUrl = configuration["ClientAppUrl"] ?? "https://localhost:3001";
+                        context.Response.Redirect(clientUrl + "/login?error=" + Uri.EscapeDataString("Authentication cancelled"));
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
             return services;
@@ -82,6 +182,12 @@ namespace RFE.Auth.API.Helpers
 
                     options.AllowAuthorizationCodeFlow()
                            .AllowRefreshTokenFlow();
+
+                    options.RegisterScopes(
+                        OpenIddict.Abstractions.OpenIddictConstants.Scopes.Email,
+                        OpenIddict.Abstractions.OpenIddictConstants.Scopes.Profile,
+                        OpenIddict.Abstractions.OpenIddictConstants.Scopes.OpenId
+                    );
 
                     options.AddDevelopmentEncryptionCertificate()
                            .AddDevelopmentSigningCertificate();

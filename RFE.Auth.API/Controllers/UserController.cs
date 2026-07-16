@@ -8,6 +8,9 @@ using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using System.Security.Claims;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -189,6 +192,17 @@ namespace RFE.Auth.API.Controllers
                     identifier = identifier
                 });
             }
+
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, authResponse.User.UserId?.ToString() ?? ""),
+                new Claim(ClaimTypes.Name, authResponse.User.Username),
+                new Claim(ClaimTypes.Email, authResponse.User.Email ?? ""),
+                new Claim(ClaimTypes.Role, "appUser")
+            };
+
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
 
             return Ok(new
             {

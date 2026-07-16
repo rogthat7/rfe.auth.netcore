@@ -11,3 +11,8 @@ obj/
 skills/
 agents/
 *.log
+
+# ==========================================
+# Local Development Scripts
+# ==========================================
+cleanup-db.ps1

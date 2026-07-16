@@ -1,10 +1,11 @@
 /* ─── Router ──────────────────────────────────────────────────────────────── */
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from '../store/auth.store'
 import { Sidebar }  from '../components/layout/Sidebar/Sidebar'
 import { TopBar }   from '../components/layout/TopBar/TopBar'
 import { Spinner }  from '../components/ui/Spinner/Spinner'
+import { generateCodeChallenge, generateCodeVerifier } from '../utils/pkce'
 import styles from './router.module.css'
 
 const Login        = lazy(() => import('../pages/auth/Login/Login'))
@@ -17,6 +18,7 @@ const Applications = lazy(() => import('../pages/applications/Applications'))
 const Users        = lazy(() => import('../pages/users/Users'))
 const Roles        = lazy(() => import('../pages/roles/Roles'))
 const NotFound     = lazy(() => import('../pages/NotFound/NotFound'))
+const OAuthCallback = lazy(() => import('../pages/auth/OAuthCallback/OAuthCallback'))
 
 function PageLoader() {
   return (
@@ -26,9 +28,31 @@ function PageLoader() {
   )
 }
 
+async function initiateLogin() {
+  const verifier = generateCodeVerifier()
+  sessionStorage.setItem('pkce_code_verifier', verifier)
+  const challenge = await generateCodeChallenge(verifier)
+
+  const apiBaseUrl = import.meta.env.VITE_AUTH_API_URL || window.location.origin
+  const redirectUri = window.location.origin + '/oauth-callback'
+
+  const url = `${apiBaseUrl}/connect/authorize?client_id=mock-external-app&response_type=code&redirect_uri=${encodeURIComponent(
+    redirectUri
+  )}&scope=openid%20profile%20email&code_challenge=${challenge}&code_challenge_method=S256`
+
+  window.location.href = url
+}
+
+function AuthRedirect() {
+  useEffect(() => {
+    initiateLogin()
+  }, [])
+  return <PageLoader />
+}
+
 function ProtectedLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (!isAuthenticated) return <AuthRedirect />
   return (
     <div className={styles.shell}>
       <Sidebar />
@@ -69,6 +93,10 @@ export const router = createBrowserRouter([
   {
     path: '/unverified',
     element: <Suspense fallback={<PageLoader />}><Unverified /></Suspense>,
+  },
+  {
+    path: '/oauth-callback',
+    element: <Suspense fallback={<PageLoader />}><OAuthCallback /></Suspense>,
   },
   {
     element: <ProtectedLayout />,

@@ -59,6 +59,14 @@
 /* ── Disabled ── */
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
+.content {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: inherit;
+  width: 100%;
+}
+
 /* ── Loading ── */
 .loading .content { opacity: 0; }
 
