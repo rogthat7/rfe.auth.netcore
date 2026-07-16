@@ -14,6 +14,7 @@ interface AuthState {
 function decodeJwt(token: string): CurrentUser | null {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
+    console.log(payload);
     let appsArray: string[] = []
     if (payload.apps) {
       if (Array.isArray(payload.apps)) {
@@ -30,11 +31,11 @@ function decodeJwt(token: string): CurrentUser | null {
       }
     }
     return {
-      id:    payload.userId || payload.sub || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || '',
-      name:  payload.userName || payload.name || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || 'System Admin',
+      id: payload.userId || payload.sub || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || '',
+      name: payload.userName || payload.name || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || 'Auth User',
       phone: payload.phone || '',
-      role:  payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 'appUser',
-      apps:  appsArray,
+      role: payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 'appUser',
+      apps: appsArray,
     }
   } catch { return null }
 }
@@ -42,11 +43,11 @@ function decodeJwt(token: string): CurrentUser | null {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      token:           null,
-      user:            null,
+      token: null,
+      user: null,
       isAuthenticated: false,
       setAuth: (token, user) => set({ token, user, isAuthenticated: true }),
-      logout:  ()           => set({ token: null, user: null, isAuthenticated: false }),
+      logout: () => set({ token: null, user: null, isAuthenticated: false }),
     }),
     {
       name: 'rfe-auth-store',

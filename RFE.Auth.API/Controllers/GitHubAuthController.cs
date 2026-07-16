@@ -39,7 +39,7 @@ namespace RFE.Auth.API.Controllers
         /// <returns>A ChallengeResult redirecting to GitHub's authentication portal.</returns>
         [HttpGet("login")]
         [AllowAnonymous]
-        public IActionResult Login(string redirectUri = "/", string role = "appUser")
+        public IActionResult Login(string redirectUri = "/", string role = "authUser")
         {
             if (HttpContext.Request.Path.Value.Contains("favicon.ico", StringComparison.OrdinalIgnoreCase))
             {

@@ -25,7 +25,7 @@ function decodeJwt(token: string) {
     }
     return {
       id:    payload.userId || payload.sub || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || '',
-      name:  payload.userName || payload.name || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || 'System Admin',
+      name:  payload.userName || payload.name || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || 'Auth-',
       phone: payload.phone || '',
       role:  payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 'appUser',
       apps:  appsArray,
@@ -63,7 +63,7 @@ export default function OAuthCallback() {
       try {
         const body = new URLSearchParams()
         body.append('grant_type', 'authorization_code')
-        body.append('client_id', 'mock-external-app')
+        body.append('client_id', 'rfe-auth-app')
         body.append('code', code)
         body.append('redirect_uri', window.location.origin + '/oauth-callback')
         body.append('code_verifier', codeVerifier)

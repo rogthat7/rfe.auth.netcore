@@ -188,11 +188,15 @@ namespace RFE.Auth.API.Models
         {
             var manager = serviceProvider.GetRequiredService<OpenIddict.Abstractions.IOpenIddictApplicationManager>();
 
-            var app = await manager.FindByClientIdAsync("mock-external-app");
+            var app = await manager.FindByClientIdAsync("rfe-auth-app");
+            // Also clean up old client ID if it still exists
+            var oldApp = await manager.FindByClientIdAsync("mock-external-app");
+            if (oldApp != null) { await manager.DeleteAsync(oldApp); }
+
             var descriptor = new OpenIddict.Abstractions.OpenIddictApplicationDescriptor
             {
-                ClientId = "mock-external-app",
-                DisplayName = "Mock External Application",
+                ClientId = "rfe-auth-app",
+                DisplayName = "RFE Auth App",
                 ClientType = OpenIddict.Abstractions.OpenIddictConstants.ClientTypes.Public,
                 Permissions =
                 {
