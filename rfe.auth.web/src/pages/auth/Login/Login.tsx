@@ -67,7 +67,7 @@ export default function Login() {
   function handleGithubLogin() {
     const apiBaseUrl = import.meta.env.VITE_AUTH_API_URL || window.location.origin
     const finalReturn = returnUrl || `${window.location.origin}/`
-    window.location.href = `${apiBaseUrl}/api/auth/github/login?redirectUri=${encodeURIComponent(finalReturn)}`
+    window.location.href = `${apiBaseUrl}/api/auth/github/login?role=appUser&redirectUri=${encodeURIComponent(finalReturn)}`
   }
 
   return (

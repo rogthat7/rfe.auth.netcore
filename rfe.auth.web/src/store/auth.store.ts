@@ -14,12 +14,27 @@ interface AuthState {
 function decodeJwt(token: string): CurrentUser | null {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
+    let appsArray: string[] = []
+    if (payload.apps) {
+      if (Array.isArray(payload.apps)) {
+        appsArray = payload.apps
+      } else {
+        try {
+          const parsed = JSON.parse(payload.apps)
+          if (Array.isArray(parsed)) {
+            appsArray = parsed
+          }
+        } catch {
+          appsArray = [payload.apps]
+        }
+      }
+    }
     return {
-      id:    payload.sub,
-      name:  payload.name,
-      phone: payload.phone,
-      role:  payload.role,
-      apps:  Array.isArray(payload.apps) ? payload.apps : [],
+      id:    payload.userId || payload.sub || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || '',
+      name:  payload.userName || payload.name || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || 'System Admin',
+      phone: payload.phone || '',
+      role:  payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 'appUser',
+      apps:  appsArray,
     }
   } catch { return null }
 }

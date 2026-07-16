@@ -12,6 +12,7 @@ using OpenIddict.Server.AspNetCore;
 using RFE.Auth.API.Models.User;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using RFE.Auth.Core.Interfaces.Services;
 
 namespace RFE.Auth.API.Controllers
 {
@@ -27,17 +28,20 @@ namespace RFE.Auth.API.Controllers
         private readonly IOpenIddictAuthorizationManager _authorizationManager;
         private readonly IOpenIddictScopeManager _scopeManager;
         private readonly DatabaseContext _context;
+        private readonly IAuthService _authService;
 
         public AuthorizationController(
             IOpenIddictApplicationManager applicationManager,
             IOpenIddictAuthorizationManager authorizationManager,
             IOpenIddictScopeManager scopeManager,
-            DatabaseContext context)
+            DatabaseContext context,
+            IAuthService authService)
         {
             _applicationManager = applicationManager;
             _authorizationManager = authorizationManager;
             _scopeManager = scopeManager;
             _context = context;
+            _authService = authService;
         }
 
         /// <summary>
@@ -143,13 +147,27 @@ namespace RFE.Auth.API.Controllers
                 nameType: ClaimsIdentity.DefaultNameClaimType,
                 roleType: ClaimsIdentity.DefaultRoleClaimType);
 
+            var dbUser = int.TryParse(userId, out var parsedUserId)
+                ? await _context.AuthUsers.FindAsync(parsedUserId)
+                : null;
+            var finalUsername = dbUser?.Username ?? result.Principal.Identity?.Name ?? "";
+
             identity.AddClaim(OpenIddictConstants.Claims.Subject, userId, OpenIddictConstants.Destinations.AccessToken);
-            identity.AddClaim(OpenIddictConstants.Claims.Name, result.Principal.Identity.Name ?? "", OpenIddictConstants.Destinations.AccessToken);
+            identity.AddClaim(OpenIddictConstants.Claims.Name, finalUsername, OpenIddictConstants.Destinations.AccessToken);
+            identity.AddClaim("userId", userId, OpenIddictConstants.Destinations.AccessToken);
+            identity.AddClaim("userName", finalUsername, OpenIddictConstants.Destinations.AccessToken);
 
             var roles = result.Principal.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
             foreach (var role in roles)
             {
                 identity.AddClaim(OpenIddictConstants.Claims.Role, role, OpenIddictConstants.Destinations.AccessToken);
+            }
+
+            if (dbUser != null)
+            {
+                var userAppPermissions = await _authService.GetUserAppPermissions(parsedUserId);
+                var appArray = userAppPermissions.Select(a => a.AppName).ToArray();
+                identity.AddClaim("apps", Newtonsoft.Json.JsonConvert.SerializeObject(appArray), OpenIddictConstants.Destinations.AccessToken);
             }
 
             var principal = new ClaimsPrincipal(identity);

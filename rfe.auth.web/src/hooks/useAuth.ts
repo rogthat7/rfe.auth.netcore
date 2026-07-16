@@ -26,10 +26,10 @@ function decodeJwt(token: string) {
     }
 
     return {
-      id:    payload.userId || payload.sub || '',
-      name:  payload.userName || payload.name || 'System Admin',
-      phone: payload.userName || payload.phone || '',
-      role:  payload.role || 'appUser',
+      id:    payload.userId || payload.sub || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || '',
+      name:  payload.userName || payload.name || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || 'System Admin',
+      phone: payload.phone || '',
+      role:  payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 'appUser',
       apps:  appsArray,
     }
   } catch { return null }

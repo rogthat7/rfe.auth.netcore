@@ -19,6 +19,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
+using Microsoft.AspNetCore.Authorization;
 using RFE.Auth.API.Models;
 using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Interfaces.Repositories;
@@ -163,6 +164,16 @@ namespace RFE.Auth.API.Helpers
                 };
             });
 
+            services.AddAuthorization(options =>
+            {
+                var defaultPolicy = new AuthorizationPolicyBuilder(
+                    JwtBearerDefaults.AuthenticationScheme,
+                    OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)
+                    .RequireAuthenticatedUser()
+                    .Build();
+                options.DefaultPolicy = defaultPolicy;
+            });
+
             return services;
         }
 
@@ -198,6 +209,8 @@ namespace RFE.Auth.API.Helpers
                            .EnableUserInfoEndpointPassthrough();
 
                     options.RequireProofKeyForCodeExchange();
+
+                    options.DisableAccessTokenEncryption();
                 })
                 .AddValidation(options =>
                 {

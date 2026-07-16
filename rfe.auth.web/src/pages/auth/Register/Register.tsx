@@ -42,11 +42,6 @@ export default function Register() {
   const [loading, setLoading] = useState(false)
   const [apps, setApps] = useState<Application[]>([])
 
-  function handleGithubLogin() {
-    const apiBaseUrl = import.meta.env.VITE_AUTH_API_URL || window.location.origin
-    window.location.href = `${apiBaseUrl}/api/auth/github/login?redirectUri=${encodeURIComponent(window.location.origin + '/')}`
-  }
-
   const { control, register, handleSubmit, watch, formState: { errors } } =
     useForm<RegisterFormValues>({
       resolver: zodResolver(registerSchema),
@@ -54,6 +49,12 @@ export default function Register() {
     })
 
   const userType = watch('userType')
+
+  function handleGithubLogin() {
+    const apiBaseUrl = import.meta.env.VITE_AUTH_API_URL || window.location.origin
+    const selectedRole = userType === 'Admin' ? 'Admin' : 'appUser'
+    window.location.href = `${apiBaseUrl}/api/auth/github/login?role=${selectedRole}&redirectUri=${encodeURIComponent(window.location.origin + '/')}`
+  }
 
   useEffect(() => {
     async function loadApps() {

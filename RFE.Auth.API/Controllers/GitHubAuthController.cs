@@ -39,7 +39,7 @@ namespace RFE.Auth.API.Controllers
         /// <returns>A ChallengeResult redirecting to GitHub's authentication portal.</returns>
         [HttpGet("login")]
         [AllowAnonymous]
-        public IActionResult Login(string redirectUri = "/")
+        public IActionResult Login(string redirectUri = "/", string role = "appUser")
         {
             if (HttpContext.Request.Path.Value.Contains("favicon.ico", StringComparison.OrdinalIgnoreCase))
             {
@@ -47,11 +47,11 @@ namespace RFE.Auth.API.Controllers
             }
 
             var requestId = Guid.NewGuid().ToString();
-            _logger.LogInformation("GitHub Login challenged. RequestId: {RequestId}, redirectUri: {RedirectUri}", requestId, redirectUri);
+            _logger.LogInformation("GitHub Login challenged. RequestId: {RequestId}, redirectUri: {RedirectUri}, Role: {Role}", requestId, redirectUri, role);
 
             var properties = new AuthenticationProperties
             {
-                RedirectUri = Url.Action(nameof(Callback), new { redirectUri })
+                RedirectUri = Url.Action(nameof(Callback), new { redirectUri, role })
             };
             return Challenge(properties, "GitHub");
         }
@@ -63,7 +63,7 @@ namespace RFE.Auth.API.Controllers
         /// <returns>Redirects to the specified redirect URI, or returns Bad Request if federated authentication failed.</returns>
         [HttpGet("callback")]
         [AllowAnonymous]
-        public async Task<IActionResult> Callback(string redirectUri = "/")
+        public async Task<IActionResult> Callback(string redirectUri = "/", string role = "appUser")
         {
             if (HttpContext.Request.Path.Value.Contains("favicon.ico", StringComparison.OrdinalIgnoreCase))
             {
@@ -71,7 +71,7 @@ namespace RFE.Auth.API.Controllers
             }
 
             var requestId = Guid.NewGuid().ToString();
-            _logger.LogInformation("GitHub Callback started. RequestId: {RequestId}", requestId);
+            _logger.LogInformation("GitHub Callback started. RequestId: {RequestId}, Role: {Role}", requestId, role);
 
             var result = await HttpContext.AuthenticateAsync("GitHub");
             if (!result.Succeeded)
@@ -92,12 +92,12 @@ namespace RFE.Auth.API.Controllers
             
             if (dbUser == null)
             {
-                _logger.LogInformation("User not found. Registering new local user for email: {Email}, RequestId: {RequestId}", email, requestId);
+                _logger.LogInformation("User not found. Registering new local user for email: {Email}, Role: {Role}, RequestId: {RequestId}", email, role, requestId);
                 
                 var randomPass = Guid.NewGuid().ToString("N");
                 var encodedPass = EncryptionHelper.EncodePasswordToBase64(randomPass);
 
-                var usernameClaim = result.Principal.FindFirst(ClaimTypes.Name)?.Value ?? email;
+                var usernameClaim = result.Principal.FindFirst("urn:github:name")?.Value ?? result.Principal.FindFirst(ClaimTypes.Name)?.Value ?? email;
                 
                 dbUser = new AuthUser
                 {
@@ -107,7 +107,7 @@ namespace RFE.Auth.API.Controllers
                     IsVerified = true
                 };
 
-                await _userService.AddNewAuthUser(dbUser, "appUser");
+                await _userService.AddNewAuthUser(dbUser, role);
                 await _userService.MarkUserAsVerified(dbUser.Username);
                 
                 dbUser = await _context.AuthUsers.FirstOrDefaultAsync(u => u.Email == email);
@@ -120,7 +120,7 @@ namespace RFE.Auth.API.Controllers
                 new Claim(ClaimTypes.NameIdentifier, dbUser.UserId?.ToString() ?? ""),
                 new Claim(ClaimTypes.Name, dbUser.Username),
                 new Claim(ClaimTypes.Email, dbUser.Email),
-                new Claim(ClaimTypes.Role, "appUser")
+                new Claim(ClaimTypes.Role, role)
             };
 
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
