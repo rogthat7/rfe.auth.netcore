@@ -36,7 +36,7 @@ async function initiateLogin() {
   const apiBaseUrl = import.meta.env.VITE_AUTH_API_URL || window.location.origin
   const redirectUri = window.location.origin + '/oauth-callback'
 
-  const url = `${apiBaseUrl}/connect/authorize?client_id=mock-external-app&response_type=code&redirect_uri=${encodeURIComponent(
+  const url = `${apiBaseUrl}/connect/authorize?client_id=rfe-auth-app&response_type=code&redirect_uri=${encodeURIComponent(
     redirectUri
   )}&scope=openid%20profile%20email&code_challenge=${challenge}&code_challenge_method=S256`
 

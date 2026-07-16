@@ -174,10 +174,36 @@ namespace RFE.Auth.API.Controllers
                 var userAppPermissions = await _authService.GetUserAppPermissions(parsedUserId);
                 var appArray = userAppPermissions.Select(a => a.AppName).ToArray();
                 identity.AddClaim("apps", Newtonsoft.Json.JsonConvert.SerializeObject(appArray), OpenIddictConstants.Destinations.AccessToken);
+                if (!string.IsNullOrEmpty(dbUser.Email))
+                    identity.AddClaim(OpenIddictConstants.Claims.Email, dbUser.Email, OpenIddictConstants.Destinations.AccessToken);
+                if (dbUser.Phone > 0)
+                    identity.AddClaim("phone", dbUser.Phone.ToString(), OpenIddictConstants.Destinations.AccessToken);
             }
 
             var principal = new ClaimsPrincipal(identity);
             principal.SetScopes(request.GetScopes());
+
+            // ── CRITICAL: Tell OpenIddict which claims go into the access token ──────
+            // Without SetDestinations(), OpenIddict v4 silently strips all custom claims
+            // except 'sub'. Each claim type must explicitly declare its destination.
+            principal.SetDestinations(claim => claim.Type switch
+            {
+                // Standard OIDC claims — include in both access token and identity token
+                OpenIddictConstants.Claims.Subject or
+                OpenIddictConstants.Claims.Name
+                    => [OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken],
+
+                // Custom claims — access token only
+                "userId" or "userName" or "role" or
+                OpenIddictConstants.Claims.Role or
+                "apps" or "phone" or
+                OpenIddictConstants.Claims.Email or
+                OpenIddictConstants.Claims.PhoneNumber
+                    => [OpenIddictConstants.Destinations.AccessToken],
+
+                // All other claims default to access token
+                _ => [OpenIddictConstants.Destinations.AccessToken]
+            });
 
             // ── For first-party: resolve or create a persistent authorization grant ─
             if (isFirstParty)

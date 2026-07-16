@@ -14,7 +14,7 @@ interface AuthState {
 function decodeJwt(token: string): CurrentUser | null {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]))
-    console.log(payload);
+    console.log(payload)
     let appsArray: string[] = []
     if (payload.apps) {
       if (Array.isArray(payload.apps)) {
@@ -31,10 +31,10 @@ function decodeJwt(token: string): CurrentUser | null {
       }
     }
     return {
-      id: payload.userId || payload.sub || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || '',
-      name: payload.userName || payload.name || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || 'Auth User',
+      id: payload.userId || payload.sub || '',
+      name: payload.userName || payload.name || payload.email || 'User',
       phone: payload.phone || '',
-      role: payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 'appUser',
+      role: payload.role || 'authUser',
       apps: appsArray,
     }
   } catch { return null }
