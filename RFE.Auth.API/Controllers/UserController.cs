@@ -118,7 +118,7 @@ namespace RFE.Auth.API.Controllers
         [ProducesResponseType(typeof(ErrorDetails), StatusCodes.Status404NotFound)]
         [Authorize]
         [HttpGet("{id}")]
-        public async Task<ActionResult<AuthUserByIdGetResponseDto>> GetAuthUserById([FromRoute] int id)
+        public async Task<ActionResult<AuthUserByIdGetResponseDto>> GetAuthUserById([FromRoute] Guid id)
         {
             var authuser = await _authuserService.GetUserById(id);
 

@@ -2,6 +2,7 @@ using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using AutoMapper;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -57,6 +58,20 @@ namespace RFE.Auth.Tests
                 _smsSenderMock.Object,
                 _jwtOptionsMock.Object
             );
+
+            // Mock HttpContext for SignInAsync
+            var httpContext = new DefaultHttpContext();
+            var serviceProviderMock = new Mock<IServiceProvider>();
+            var authServiceMock = new Mock<IAuthenticationService>();
+            serviceProviderMock
+                .Setup(s => s.GetService(typeof(IAuthenticationService)))
+                .Returns(authServiceMock.Object);
+            httpContext.RequestServices = serviceProviderMock.Object;
+
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
         }
 
         private static object GetPropertyValue(object obj, string propertyName)
@@ -76,7 +91,7 @@ namespace RFE.Auth.Tests
 
             var user = new AuthUser
             {
-                UserId = 1,
+                UserId = Guid.NewGuid(),
                 Username = "testuser",
                 IsVerified = true
             };
@@ -109,7 +124,7 @@ namespace RFE.Auth.Tests
 
             var user = new AuthUser
             {
-                UserId = 2,
+                UserId = Guid.NewGuid(),
                 Username = "unverifieduser",
                 IsVerified = false
             };

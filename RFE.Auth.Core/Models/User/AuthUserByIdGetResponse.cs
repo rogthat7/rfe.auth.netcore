@@ -13,5 +13,8 @@ namespace RFE.Auth.Core.Models.User
         /// <value></value>
         [JsonIgnore]
         public override string Password { get; set; }
+
+        public string Role { get; set; }
+        public string Apps { get; set; }
     }
 }

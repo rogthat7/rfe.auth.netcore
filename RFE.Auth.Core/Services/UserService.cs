@@ -38,7 +38,7 @@ namespace RFE.Auth.Core.Services
             return await _userRepository.All() as List<AuthUserByIdGetResponse>;
         }
 
-        public async Task<AuthUserByIdGetResponse> GetUserById(int id)
+        public async Task<AuthUserByIdGetResponse> GetUserById(Guid id)
         {
              return await _userRepository.GetById(id) as AuthUserByIdGetResponse;
         }

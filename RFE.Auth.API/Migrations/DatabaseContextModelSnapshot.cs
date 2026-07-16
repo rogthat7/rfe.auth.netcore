@@ -232,11 +232,9 @@ namespace RFE.Auth.API.Migrations
 
             modelBuilder.Entity("RFE.Auth.Core.Models.App.AppPermission", b =>
                 {
-                    b.Property<int>("PermissionId")
+                    b.Property<Guid>("PermissionId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PermissionId"));
+                        .HasColumnType("uuid");
 
                     b.Property<string>("PermissionName")
                         .IsRequired()
@@ -259,17 +257,15 @@ namespace RFE.Auth.API.Migrations
 
             modelBuilder.Entity("RFE.Auth.Core.Models.App.AppRole", b =>
                 {
-                    b.Property<int>("AppRoleId")
+                    b.Property<Guid>("AppRoleId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("uuid");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AppRoleId"));
+                    b.Property<Guid>("AppId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("AppId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("RoleId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("AppRoleId");
 
@@ -282,11 +278,9 @@ namespace RFE.Auth.API.Migrations
 
             modelBuilder.Entity("RFE.Auth.Core.Models.App.Application", b =>
                 {
-                    b.Property<int>("AppId")
+                    b.Property<Guid>("AppId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("AppId"));
+                        .HasColumnType("uuid");
 
                     b.Property<string>("AppName")
                         .IsRequired()
@@ -315,11 +309,9 @@ namespace RFE.Auth.API.Migrations
 
             modelBuilder.Entity("RFE.Auth.Core.Models.Role.Roles", b =>
                 {
-                    b.Property<int>("RoleId")
+                    b.Property<Guid>("RoleId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RoleId"));
+                        .HasColumnType("uuid");
 
                     b.Property<string>("RoleName")
                         .HasColumnType("text");
@@ -331,11 +323,9 @@ namespace RFE.Auth.API.Migrations
 
             modelBuilder.Entity("RFE.Auth.Core.Models.User.AuthUser", b =>
                 {
-                    b.Property<int>("UserId")
+                    b.Property<Guid>("UserId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UserId"));
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Email")
                         .HasColumnType("text");
@@ -370,20 +360,18 @@ namespace RFE.Auth.API.Migrations
 
             modelBuilder.Entity("RFE.Auth.Core.Models.User.UserAppPermission", b =>
                 {
-                    b.Property<int>("UAPId")
+                    b.Property<Guid>("UAPId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("uuid");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UAPId"));
+                    b.Property<Guid>("AppId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("AppId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("PermissionId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("PermissionId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("UAPId");
 
@@ -398,20 +386,18 @@ namespace RFE.Auth.API.Migrations
 
             modelBuilder.Entity("RFE.Auth.Core.Models.User.UserRole", b =>
                 {
-                    b.Property<int>("UserRoleId")
+                    b.Property<Guid>("UserRoleId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
+                        .HasColumnType("uuid");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("UserRoleId"));
+                    b.Property<Guid>("AppId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("AppId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
 
-                    b.Property<int>("RoleId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
 
                     b.HasKey("UserRoleId");
 

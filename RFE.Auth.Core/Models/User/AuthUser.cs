@@ -15,8 +15,7 @@ namespace RFE.Auth.Core.Models.User
     public class AuthUser
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int?     UserId      { get; set; }
+        public Guid?    UserId      { get; set; }
         [Required]
         public string   Username    { get; set; }
         public string   Email       { get; set; }

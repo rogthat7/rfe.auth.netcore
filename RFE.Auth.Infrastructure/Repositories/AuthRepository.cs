@@ -40,7 +40,7 @@ namespace RFE.Auth.Infrastructure.Repositories
             return res.FirstOrDefault();
         }
 
-        public async Task<List<UserAppPermissionResponse>> GetUserAppPermissionsByUserId(int? userId)
+        public async Task<List<UserAppPermissionResponse>> GetUserAppPermissionsByUserId(Guid? userId)
         {
             const string sql = @"
                 SELECT 
@@ -58,7 +58,7 @@ namespace RFE.Auth.Infrastructure.Repositories
             return res.ToList();
         }
 
-        public async Task<string?> GetUserRoleByUserId(int userId)
+        public async Task<string?> GetUserRoleByUserId(Guid userId)
         {
             const string sql = @"
                 SELECT r.""RoleName"" 

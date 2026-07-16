@@ -21,12 +21,12 @@ namespace RFE.Auth.Core.Services
             return await _authRepository.AuthenticateAuthUser(authenticateRequestModel.Username, authenticateRequestModel.Password) as AuthUser;
         }
 
-        public async  Task<List<UserAppPermissionResponse>> GetUserAppPermissions(int? UserId)
+        public async  Task<List<UserAppPermissionResponse>> GetUserAppPermissions(Guid? UserId)
         {
              return await _authRepository.GetUserAppPermissionsByUserId(UserId) ;
         }
 
-        public async Task<string?> GetUserRoleAsync(int userId)
+        public async Task<string?> GetUserRoleAsync(Guid userId)
         {
             return await _authRepository.GetUserRoleByUserId(userId);
         }

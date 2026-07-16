@@ -28,12 +28,12 @@ namespace RFE.Auth.Infrastructure.Repositories.Shared
             return await _dbSet.ToListAsync<T>();
         }
 
-        public virtual Task<bool> Delete(int id)
+        public virtual Task<bool> Delete(Guid id)
         {
             throw new System.NotImplementedException();
         }
 
-        public async virtual Task<T> GetById(int id)
+        public async virtual Task<T> GetById(Guid id)
         {
             return await _dbSet.FindAsync(id);
         }

@@ -1,17 +1,11 @@
 /* ─── Users Page ──────────────────────────────────────────────────────────── */
+import { useState, useEffect } from 'react'
 import { Badge, roleToBadge } from '../../components/ui/Badge/Badge'
-import { useAppStore, type AppState } from '../../store/app.store'
+import { useAppStore } from '../../store/app.store'
 import { getInitials, formatPhone, formatRelativeTime, formatRole } from '../../utils/formatters'
+import { userService } from '../../services/user.service'
+import type { User } from '../../types/user.types'
 import styles from './Users.module.css'
-
-const MOCK_USERS = [
-  { id:'1', name:'Ravi Kumar',  phone:'9876543210', role:'Labourer',   apps:['rfe-auth'],               status:'Active',   lastLoginAt: new Date(Date.now()-2*60000).toISOString()   },
-  { id:'2', name:'Priya Sharma',phone:'8765432109', role:'JobCreator', apps:['rfe-auth'],               status:'Active',   lastLoginAt: new Date(Date.now()-15*60000).toISOString()  },
-  { id:'3', name:'Amit Patel',  phone:'7654321098', role:'Labourer',   apps:['rfe-auth','rfe-portal'],  status:'Active',   lastLoginAt: new Date(Date.now()-3600000).toISOString()   },
-  { id:'4', name:'Sunita Devi', phone:'6543210987', role:'JobCreator', apps:['rfe-auth'],               status:'Inactive', lastLoginAt: new Date(Date.now()-10800000).toISOString()  },
-  { id:'5', name:'Mohan Singh', phone:'5432109876', role:'Labourer',   apps:['rfe-auth'],               status:'Active',   lastLoginAt: new Date(Date.now()-86400000).toISOString()  },
-  { id:'6', name:'Dev Admin',   phone:'9999900000', role:'Admin',      apps:['rfe-auth','rfe-admin'],   status:'Active',   lastLoginAt: new Date(Date.now()-60000).toISOString()    },
-]
 
 const APP_BADGE_COLORS: Record<string, 'blue'|'orange'|'grey'|'cyan'> = {
   'rfe-auth':   'blue',
@@ -25,7 +19,59 @@ export default function Users() {
   const selectedAppId = useAppStore((s: { selectedAppId: string }) => s.selectedAppId)
   const setApp        = useAppStore((s: { setSelectedApp: (id: string) => void }) => s.setSelectedApp)
 
-  const filtered = MOCK_USERS.filter((u) => u.apps.includes(selectedAppId))
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    userService.getUsers()
+      .then((res) => {
+        if (active) {
+          const rawUsers = res.data || []
+          const mapped: User[] = rawUsers.map((u: any) => {
+            const appsArray = u.apps ? u.apps.split(',') : ['rfe-auth']
+            return {
+              id: u.userId,
+              name: u.username || 'Unnamed User',
+              phone: u.phone ? u.phone.toString() : '',
+              role: u.role || 'Labourer',
+              apps: appsArray,
+              status: 'Active',
+              createdAt: '',
+              lastLoginAt: new Date().toISOString()
+            }
+          })
+          setUsers(mapped)
+          setError(null)
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          console.error('Failed to fetch users:', err)
+          setError('Failed to load users from the server.')
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false)
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const filtered = users.filter((u) => u.apps.includes(selectedAppId))
+
+  if (loading) {
+    return <div className={styles.loading}>Loading users...</div>
+  }
+
+  if (error) {
+    return <div className={styles.error}>{error}</div>
+  }
 
   return (
     <div className={styles.page}>
@@ -82,7 +128,7 @@ export default function Users() {
                     ))}
                   </div>
                 </td>
-                <td className={styles.td}><span className={styles.muted}>{formatRelativeTime(user.lastLoginAt)}</span></td>
+                <td className={styles.td}><span className={styles.muted}>{user.lastLoginAt ? formatRelativeTime(user.lastLoginAt) : 'Never'}</span></td>
                 <td className={styles.td}>
                   <span className={[styles.statusDot, user.status === 'Active' ? styles.dotActive : styles.dotInactive].join(' ')} />
                   <span className={styles.statusText}>{user.status}</span>

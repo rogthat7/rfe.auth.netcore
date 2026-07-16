@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using RFE.Auth.Core.Models.Role;
@@ -8,14 +9,13 @@ namespace RFE.Auth.Core.Models.App
     public class AppRole
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int AppRoleId { get; set; }
+        public Guid AppRoleId { get; set; }
 
         [Required]
-        public int AppId { get; set; }
+        public Guid AppId { get; set; }
 
         [Required]
-        public int RoleId { get; set; }
+        public Guid RoleId { get; set; }
 
         [ForeignKey("AppId")]
         public Application Application { get; set; }

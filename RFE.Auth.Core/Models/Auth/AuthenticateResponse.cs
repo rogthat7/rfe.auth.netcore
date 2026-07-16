@@ -1,10 +1,11 @@
+using System;
 using RFE.Auth.Core.Models.User;
 
 namespace RFE.Auth.Core.Models.Auth
 {
     public class AuthenticateResponse
     {
-        public int?     Id         { get; set; }
+        public Guid?    Id         { get; set; }
         public string   Username   { get; set; }
         public bool     IsVerified { get; set; }
         public Token    Token      { get; set; }
@@ -13,7 +14,7 @@ namespace RFE.Auth.Core.Models.Auth
 
         public AuthenticateResponse(AuthUser user, Token token)
         {
-            Id         = user.UserId.Value;
+            Id         = user.UserId;
             Username   = user.Username;
             IsVerified = user.IsVerified;
             Token      = token;

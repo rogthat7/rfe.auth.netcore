@@ -8,7 +8,7 @@ namespace RFE.Auth.Core.Interfaces.Services
     public interface IUserService
     {
         Task<List<AuthUserByIdGetResponse>> GetAllRegisteredUsers();
-        Task<AuthUserByIdGetResponse> GetUserById(int id);
+        Task<AuthUserByIdGetResponse> GetUserById(System.Guid id);
         Task AddNewAuthUser(AuthUser authUser, string roleName, string appName = "rfe-auth");
         Task MarkUserAsVerified(string username);
     }

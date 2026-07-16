@@ -41,21 +41,21 @@ namespace RFE.Auth.API.Models
             var roleLabourer = databaseContext.Roles.FirstOrDefault(r => r.RoleName == "Labourer") ?? new Roles { RoleName = "Labourer" };
             var roleJobCreator = databaseContext.Roles.FirstOrDefault(r => r.RoleName == "JobCreator") ?? new Roles { RoleName = "JobCreator" };
             
-            if (roleAppUser.RoleId == 0) databaseContext.Roles.Add(roleAppUser);
-            if (roleAuthUser.RoleId == 0) databaseContext.Roles.Add(roleAuthUser);
-            if (roleLaborer.RoleId == 0) databaseContext.Roles.Add(roleLaborer);
-            if (roleEmployer.RoleId == 0) databaseContext.Roles.Add(roleEmployer);
-            if (rolePanchayat.RoleId == 0) databaseContext.Roles.Add(rolePanchayat);
-            if (roleAdmin.RoleId == 0) databaseContext.Roles.Add(roleAdmin);
-            if (roleLabourer.RoleId == 0) databaseContext.Roles.Add(roleLabourer);
-            if (roleJobCreator.RoleId == 0) databaseContext.Roles.Add(roleJobCreator);
+            if (roleAppUser.RoleId == Guid.Empty) databaseContext.Roles.Add(roleAppUser);
+            if (roleAuthUser.RoleId == Guid.Empty) databaseContext.Roles.Add(roleAuthUser);
+            if (roleLaborer.RoleId == Guid.Empty) databaseContext.Roles.Add(roleLaborer);
+            if (roleEmployer.RoleId == Guid.Empty) databaseContext.Roles.Add(roleEmployer);
+            if (rolePanchayat.RoleId == Guid.Empty) databaseContext.Roles.Add(rolePanchayat);
+            if (roleAdmin.RoleId == Guid.Empty) databaseContext.Roles.Add(roleAdmin);
+            if (roleLabourer.RoleId == Guid.Empty) databaseContext.Roles.Add(roleLabourer);
+            if (roleJobCreator.RoleId == Guid.Empty) databaseContext.Roles.Add(roleJobCreator);
             databaseContext.SaveChanges();
 
             // 2. Ensure Applications
-            var appFish = databaseContext.Apps.FirstOrDefault(a => a.AppName == "fish-tracker") ?? new Application { AppName = "fish-tracker" };
-            var appAuth = databaseContext.Apps.FirstOrDefault(a => a.AppName == "rfe-auth") ?? new Application { AppName = "rfe-auth" };
-            if (appFish.AppId == 0) databaseContext.Apps.Add(appFish);
-            if (appAuth.AppId == 0) databaseContext.Apps.Add(appAuth);
+            var appFish = databaseContext.Apps.FirstOrDefault(a => a.AppName == "fish-tracker") ?? new Application { AppName = "fish-tracker", DisplayName = "Fish Tracker" };
+            var appAuth = databaseContext.Apps.FirstOrDefault(a => a.AppName == "rfe-auth") ?? new Application { AppName = "rfe-auth", DisplayName = "RFE Auth" };
+            if (appFish.AppId == Guid.Empty) databaseContext.Apps.Add(appFish);
+            if (appAuth.AppId == Guid.Empty) databaseContext.Apps.Add(appAuth);
             databaseContext.SaveChanges();
 
             // 3. Ensure AuthUsers
@@ -141,7 +141,7 @@ namespace RFE.Auth.API.Models
                 PermissionName = "modbase",
                 PermissionType = "BASIC"
             };
-            if (permBase.PermissionId == 0) databaseContext.AppPermissions.Add(permBase);
+            if (permBase.PermissionId == Guid.Empty) databaseContext.AppPermissions.Add(permBase);
             databaseContext.SaveChanges();
 
             // 6. Ensure UserAppPermission

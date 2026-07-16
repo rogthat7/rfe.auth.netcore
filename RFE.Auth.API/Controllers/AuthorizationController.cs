@@ -147,7 +147,7 @@ namespace RFE.Auth.API.Controllers
                 nameType: ClaimsIdentity.DefaultNameClaimType,
                 roleType: ClaimsIdentity.DefaultRoleClaimType);
 
-            var dbUser = int.TryParse(userId, out var parsedUserId)
+            var dbUser = Guid.TryParse(userId, out var parsedUserId)
                 ? await _context.AuthUsers.FindAsync(parsedUserId)
                 : null;
             var finalUsername = dbUser?.Username ?? result.Principal.Identity?.Name ?? "";
