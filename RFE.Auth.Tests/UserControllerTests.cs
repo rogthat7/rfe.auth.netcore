@@ -26,6 +26,7 @@ namespace RFE.Auth.Tests
         private Mock<IEmailSender> _emailSenderMock;
         private Mock<ISmsSender> _smsSenderMock;
         private Mock<IOptions<JwtOptions>> _jwtOptionsMock;
+        private Mock<IAuthService> _authServiceMock;
         private UserController _controller;
 
         [SetUp]
@@ -37,6 +38,7 @@ namespace RFE.Auth.Tests
             _emailSenderMock = new Mock<IEmailSender>();
             _smsSenderMock = new Mock<ISmsSender>();
             _jwtOptionsMock = new Mock<IOptions<JwtOptions>>();
+            _authServiceMock = new Mock<IAuthService>();
 
             var jwtOptions = new JwtOptions
             {
@@ -56,7 +58,8 @@ namespace RFE.Auth.Tests
                 _mapperMock.Object,
                 _emailSenderMock.Object,
                 _smsSenderMock.Object,
-                _jwtOptionsMock.Object
+                _jwtOptionsMock.Object,
+                _authServiceMock.Object
             );
 
             // Mock HttpContext for SignInAsync
@@ -221,6 +224,68 @@ namespace RFE.Auth.Tests
             var okResult = (OkObjectResult)result;
             var verificationMethod = GetPropertyValue(okResult.Value, "verificationMethod");
             Assert.That(verificationMethod, Is.EqualTo("email"));
+        }
+
+        [Test]
+        public async Task GetTokenFromCookie_WhenAuthenticated_ReturnsOkWithToken()
+        {
+            // Arrange
+            var userId = Guid.NewGuid();
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString())
+            };
+            var identity = new ClaimsIdentity(claims, "TestCookieAuth");
+            var principal = new ClaimsPrincipal(identity);
+
+            var httpContext = new DefaultHttpContext { User = principal };
+            _controller.ControllerContext = new ControllerContext
+            {
+                HttpContext = httpContext
+            };
+
+            var dbUser = new AuthUserByIdGetResponse
+            {
+                UserId = userId,
+                Username = "testuser",
+                Email = "test@example.com"
+            };
+
+            _userServiceMock
+                .Setup(s => s.GetUserById(userId))
+                .ReturnsAsync(dbUser);
+
+            _authServiceMock
+                .Setup(s => s.GetUserAppPermissions(userId))
+                .ReturnsAsync(new List<UserAppPermissionResponse>());
+
+            _authServiceMock
+                .Setup(s => s.GetUserRoleAsync(userId))
+                .ReturnsAsync("appUser");
+
+            // Act
+            var result = await _controller.GetTokenFromCookie();
+
+            // Assert
+            Assert.That(result, Is.InstanceOf<OkObjectResult>());
+            var okResult = (OkObjectResult)result;
+            var tokenObj = GetPropertyValue(okResult.Value, "token");
+            var tokenVal = GetPropertyValue(tokenObj, "value");
+            Assert.That(tokenVal, Is.Not.Null);
+            Assert.That(tokenVal.ToString(), Is.Not.Empty);
+        }
+
+        [Test]
+        public void OAuthSuccess_ReturnsContentResultWithHtml()
+        {
+            // Act
+            var result = _controller.OAuthSuccess();
+
+            // Assert
+            Assert.That(result, Is.InstanceOf<ContentResult>());
+            var contentResult = (ContentResult)result;
+            Assert.That(contentResult.ContentType, Is.EqualTo("text/html"));
+            Assert.That(contentResult.Content, Does.Contain("oauth-success"));
         }
     }
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net.Mail;
+using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
@@ -12,6 +13,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using RFE.Auth.API.Controllers.Shared;
@@ -39,6 +41,7 @@ namespace RFE.Auth.API.Controllers
         private readonly IJwtAuthenticationService _JwtAuthService;
         private readonly IEmailSender _emailSender;
         private readonly ISmsSender _smsSender;
+        private readonly IAuthService _authService;
 
         /// <summary>
         /// UserController
@@ -49,18 +52,21 @@ namespace RFE.Auth.API.Controllers
         /// <param name="emailSender"></param>
         /// <param name="smsSender"></param>
         /// <param name="jwtoptions"></param>
+        /// <param name="authService"></param>
         public UserController(  IUserService authuserService,
                                  IJwtAuthenticationService jwtAuthService, 
                                  IMapper mapper,
                                  IEmailSender emailSender,
                                  ISmsSender smsSender,
-                                 IOptions<JwtOptions> jwtoptions): base (jwtoptions)
+                                 IOptions<JwtOptions> jwtoptions,
+                                 IAuthService authService): base (jwtoptions)
         {
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
             _smsSender = smsSender ?? throw new ArgumentNullException(nameof(smsSender));
             _authuserService = authuserService ?? throw new ArgumentNullException(nameof(authuserService));
             _JwtAuthService = jwtAuthService ?? throw new ArgumentNullException(nameof(jwtAuthService));
+            _authService = authService ?? throw new ArgumentNullException(nameof(authService));
         } 
         /// <summary>
         /// Authenticate
@@ -494,6 +500,115 @@ namespace RFE.Auth.API.Controllers
                 message = "Phone verified! Account created successfully.",
                 status = "OK"
             });
+        }
+
+        /// <summary>
+        /// Gets a JWT token for the currently cookie-authenticated user.
+        /// </summary>
+        [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
+        [HttpGet("token")]
+        public async Task<IActionResult> GetTokenFromCookie()
+        {
+            var userIdVal = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdVal) || !Guid.TryParse(userIdVal, out var userId))
+            {
+                return Unauthorized(new { message = "User not authenticated or invalid identifier" });
+            }
+
+            var user = await _authuserService.GetUserById(userId);
+            if (user == null)
+            {
+                return NotFound(new { message = "User not found" });
+            }
+
+            var userAppPermissions = await _authService.GetUserAppPermissions(userId);
+            var role = await _authService.GetUserRoleAsync(userId);
+
+            var customOptionValues = _jwtOptions.Value;
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var tokenKey = Encoding.ASCII.GetBytes(customOptionValues.Secret);
+            var appArray = userAppPermissions.Select(a => a.AppName).ToArray<string>();
+            
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new Claim[]{
+                    new Claim("role", role ?? "appUser"),
+                    new Claim("userId", user.UserId.ToString()),
+                    new Claim("userName", user.Username), 
+                    new Claim("apps", JsonConvert.SerializeObject(appArray)),
+                    new Claim("issuer", customOptionValues.Issuer)
+                }),
+                Expires = DateTime.UtcNow.AddDays(1),
+                SigningCredentials = new SigningCredentials(
+                    new SymmetricSecurityKey(tokenKey),
+                    SecurityAlgorithms.HmacSha256Signature
+                )
+            };
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+
+            return Ok(new
+            {
+                token = new
+                {
+                    value = tokenHandler.WriteToken(token)
+                }
+            });
+        }
+
+        /// <summary>
+        /// Callback page for successful federated authentication that notifies its opener and closes itself.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpGet("oauth-success")]
+        public IActionResult OAuthSuccess()
+        {
+            var html = @"
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Authentication Success</title>
+                    <style>
+                        body {
+                            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+                            background-color: #0f172a;
+                            color: #f1f5f9;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            justify-content: center;
+                            height: 100vh;
+                            margin: 0;
+                            text-align: center;
+                        }
+                        .container {
+                            background: rgba(30, 41, 59, 0.7);
+                            border: 1px solid rgba(255, 255, 255, 0.1);
+                            border-radius: 12px;
+                            padding: 32px;
+                            backdrop-filter: blur(10px);
+                            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                            max-width: 320px;
+                        }
+                        h2 { color: #10b981; margin-top: 0; }
+                        p { color: #94a3b8; font-size: 14px; margin-bottom: 0; }
+                    </style>
+                </head>
+                <body>
+                    <div class='container'>
+                        <h2>Success!</h2>
+                        <p>You have authenticated successfully. This window will now close.</p>
+                    </div>
+                    <script>
+                        if (window.opener) {
+                            window.opener.postMessage({ type: 'oauth-success' }, window.location.origin);
+                            window.close();
+                        } else {
+                            window.location.href = '/scalar/v1';
+                        }
+                    </script>
+                </body>
+                </html>";
+            return Content(html, "text/html");
         }
     }
 
