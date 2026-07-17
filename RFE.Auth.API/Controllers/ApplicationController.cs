@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using OpenIddict.Abstractions;
 using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Models.App;
 using RFE.Auth.Core.Models.Role;
@@ -16,10 +17,12 @@ namespace RFE.Auth.API.Controllers
     public class ApplicationController : ControllerBase
     {
         private readonly DatabaseContext _context;
+        private readonly IOpenIddictApplicationManager _applicationManager;
 
-        public ApplicationController(DatabaseContext context)
+        public ApplicationController(DatabaseContext context, IOpenIddictApplicationManager applicationManager)
         {
             _context = context;
+            _applicationManager = applicationManager;
         }
 
         [HttpGet]
@@ -118,6 +121,46 @@ namespace RFE.Auth.API.Controllers
                     await _context.SaveChangesAsync();
                 }
 
+                // Register in OpenIddict dynamically
+                var existingOidc = await _applicationManager.FindByClientIdAsync(model.AppId);
+                var descriptor = new OpenIddictApplicationDescriptor
+                {
+                    ClientId = model.AppId,
+                    DisplayName = model.DisplayName,
+                    ClientType = OpenIddictConstants.ClientTypes.Public,
+                    Permissions =
+                    {
+                        OpenIddictConstants.Permissions.Endpoints.Authorization,
+                        OpenIddictConstants.Permissions.Endpoints.Token,
+                        OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
+                        OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+                        OpenIddictConstants.Permissions.ResponseTypes.Code,
+                        OpenIddictConstants.Permissions.Scopes.Email,
+                        OpenIddictConstants.Permissions.Scopes.Profile,
+                        OpenIddictConstants.Permissions.Prefixes.Scope + "openid"
+                    }
+                };
+
+                if (model.RedirectUris != null && model.RedirectUris.Any())
+                {
+                    foreach (var uriStr in model.RedirectUris)
+                    {
+                        if (Uri.TryCreate(uriStr.Trim(), UriKind.Absolute, out var uri))
+                        {
+                            descriptor.RedirectUris.Add(uri);
+                        }
+                    }
+                }
+
+                if (existingOidc == null)
+                {
+                    await _applicationManager.CreateAsync(descriptor);
+                }
+                else
+                {
+                    await _applicationManager.UpdateAsync(existingOidc, descriptor);
+                }
+
                 return Ok(new
                 {
                     success = true,
@@ -161,6 +204,13 @@ namespace RFE.Auth.API.Controllers
                 _context.Apps.Remove(app);
                 await _context.SaveChangesAsync();
 
+                // Delete from OpenIddict dynamically
+                var existingOidc = await _applicationManager.FindByClientIdAsync(appId);
+                if (existingOidc != null)
+                {
+                    await _applicationManager.DeleteAsync(existingOidc);
+                }
+
                 return Ok(new { success = true, message = "Application deleted successfully." });
             }
             catch (Exception ex)
@@ -177,5 +227,6 @@ namespace RFE.Auth.API.Controllers
         public string Description { get; set; }
         public List<string> AllowedRoles { get; set; }
         public string WebhookUrl { get; set; }
+        public List<string> RedirectUris { get; set; }
     }
 }

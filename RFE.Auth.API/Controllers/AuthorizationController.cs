@@ -13,6 +13,8 @@ using RFE.Auth.API.Models.User;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using RFE.Auth.Core.Interfaces.Services;
+using RFE.Auth.API.Helpers;
+using RFE.Auth.Core.Models.User;
 
 namespace RFE.Auth.API.Controllers
 {
@@ -29,19 +31,22 @@ namespace RFE.Auth.API.Controllers
         private readonly IOpenIddictScopeManager _scopeManager;
         private readonly DatabaseContext _context;
         private readonly IAuthService _authService;
+        private readonly IUserService _userService;
 
         public AuthorizationController(
             IOpenIddictApplicationManager applicationManager,
             IOpenIddictAuthorizationManager authorizationManager,
             IOpenIddictScopeManager scopeManager,
             DatabaseContext context,
-            IAuthService authService)
+            IAuthService authService,
+            IUserService userService)
         {
             _applicationManager = applicationManager;
             _authorizationManager = authorizationManager;
             _scopeManager = scopeManager;
             _context = context;
             _authService = authService;
+            _userService = userService;
         }
 
         /// <summary>
@@ -63,6 +68,15 @@ namespace RFE.Auth.API.Controllers
             // If the user principal is not authenticated, redirect the user to the login page.
             if (!result.Succeeded)
             {
+                var provider = Request.Query["provider"].ToString();
+                if (!string.IsNullOrEmpty(provider))
+                {
+                    var challengeRedirectUri = Request.PathBase + Request.Path + QueryString.Create(
+                        Request.HasFormContentType ? Request.Form.ToList() : Request.Query.ToList());
+                    var properties = new AuthenticationProperties { RedirectUri = challengeRedirectUri };
+                    return Challenge(properties, provider);
+                }
+
                 return Challenge(
                     properties: new AuthenticationProperties
                     {
@@ -76,12 +90,60 @@ namespace RFE.Auth.API.Controllers
             var application = await _applicationManager.FindByClientIdAsync(request.ClientId) ??
                 throw new InvalidOperationException("Details concerning the calling client application cannot be found.");
 
-            // Retrieve the user identifier.
-            var userId = result.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
+            // Retrieve the user identifier and map/auto-register federated users.
+            var nameIdentifier = result.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(nameIdentifier))
             {
                 return BadRequest(new { error = "invalid_user", error_description = "User identifier not found." });
             }
+
+            var email = result.Principal.FindFirst(ClaimTypes.Email)?.Value;
+            AuthUser dbUser = null;
+
+            if (!string.IsNullOrEmpty(email))
+            {
+                dbUser = await _context.AuthUsers.FirstOrDefaultAsync(u => u.Email == email);
+            }
+
+            if (dbUser == null && !Guid.TryParse(nameIdentifier, out _))
+            {
+                // This is a new federated user signing in. Auto-register them in the database!
+                if (!string.IsNullOrEmpty(email))
+                {
+                    var randomPass = Guid.NewGuid().ToString("N");
+                    var encodedPass = EncryptionHelper.EncodePasswordToBase64(randomPass);
+
+                    dbUser = new AuthUser
+                    {
+                        Username = email,
+                        Email = email,
+                        Password = encodedPass,
+                        IsVerified = true
+                    };
+
+                    // Determine the role from the state parameter if passed, or default to a role
+                    var roleName = "Laborer"; // Default role
+                    var state = request.State;
+                    if (!string.IsNullOrEmpty(state))
+                    {
+                        if (state.Equals("Employer", StringComparison.OrdinalIgnoreCase) || state.Equals("JobCreator", StringComparison.OrdinalIgnoreCase))
+                        {
+                            roleName = "Employer";
+                        }
+                        else if (state.Equals("Laborer", StringComparison.OrdinalIgnoreCase) || state.Equals("Labourer", StringComparison.OrdinalIgnoreCase))
+                        {
+                            roleName = "Laborer";
+                        }
+                    }
+
+                    await _userService.AddNewAuthUser(dbUser, roleName);
+
+                    // Re-fetch to get the populated UserId
+                    dbUser = await _context.AuthUsers.FirstOrDefaultAsync(u => u.Email == email);
+                }
+            }
+
+            var userId = dbUser?.UserId?.ToString() ?? nameIdentifier;
 
             // ── First-party client: auto-consent (no UI shown) ───────────────────
             var clientId = await _applicationManager.GetClientIdAsync(application);
@@ -153,9 +215,7 @@ namespace RFE.Auth.API.Controllers
                 nameType: ClaimsIdentity.DefaultNameClaimType,
                 roleType: ClaimsIdentity.DefaultRoleClaimType);
 
-            var dbUser = Guid.TryParse(userId, out var parsedUserId)
-                ? await _context.AuthUsers.FindAsync(parsedUserId)
-                : null;
+            Guid.TryParse(userId, out var parsedUserId);
             var finalUsername = dbUser?.Username ?? result.Principal.Identity?.Name ?? "";
 
             identity.AddClaim(OpenIddictConstants.Claims.Subject, userId, OpenIddictConstants.Destinations.AccessToken);
@@ -163,7 +223,19 @@ namespace RFE.Auth.API.Controllers
             identity.AddClaim("userId", userId, OpenIddictConstants.Destinations.AccessToken);
             identity.AddClaim("userName", finalUsername, OpenIddictConstants.Destinations.AccessToken);
 
-            var roles = result.Principal.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+            var roles = new List<string>();
+            if (dbUser != null)
+            {
+                roles = await _context.UserRoles
+                    .Where(ur => ur.UserId == dbUser.UserId)
+                    .Join(_context.Roles, ur => ur.RoleId, r => r.RoleId, (ur, r) => r.RoleName)
+                    .ToListAsync();
+            }
+            else
+            {
+                roles = result.Principal.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+            }
+
             foreach (var role in roles)
             {
                 identity.AddClaim(OpenIddictConstants.Claims.Role, role, OpenIddictConstants.Destinations.AccessToken);
@@ -261,6 +333,80 @@ namespace RFE.Auth.API.Controllers
             }
 
             throw new InvalidOperationException("The specified grant type is not supported.");
+        }
+
+        [HttpGet("userinfo"), HttpPost("userinfo")]
+        [IgnoreAntiforgeryToken]
+        [Produces("application/json")]
+        public async Task<IActionResult> UserInfo()
+        {
+            var result = await HttpContext.AuthenticateAsync(OpenIddict.Validation.AspNetCore.OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme);
+            if (!result.Succeeded)
+            {
+                return Unauthorized(new { error = "invalid_token", error_description = "The access token is invalid or expired." });
+            }
+
+            var principal = result.Principal;
+            Console.WriteLine("DEBUG USERINFO: Token claims:");
+            foreach (var claim in principal.Claims)
+            {
+                Console.WriteLine($"DEBUG CLAIM: {claim.Type} = {claim.Value}");
+            }
+
+            var userId = principal.FindFirst(OpenIddictConstants.Claims.Subject)?.Value;
+            Console.WriteLine($"DEBUG USERINFO: extracted Subject={userId}");
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { error = "invalid_token", error_description = "Subject claim is missing." });
+            }
+
+            var parseSucceeded = Guid.TryParse(userId, out var parsedUserId);
+            Console.WriteLine($"DEBUG USERINFO: Guid Parse Succeeded={parseSucceeded}, ParsedGuid={parsedUserId}");
+
+            var dbUser = parseSucceeded
+                ? await _context.AuthUsers.FindAsync(parsedUserId)
+                : null;
+
+            if (dbUser == null)
+            {
+                Console.WriteLine($"DEBUG USERINFO: dbUser is NULL. Checking database for any users...");
+                try
+                {
+                    var allUsersCount = await _context.AuthUsers.CountAsync();
+                    Console.WriteLine($"DEBUG USERINFO: total users in AUTH.AuthUser = {allUsersCount}");
+                    var firstUser = await _context.AuthUsers.FirstOrDefaultAsync();
+                    if (firstUser != null)
+                    {
+                        Console.WriteLine($"DEBUG USERINFO: First user in DB: Id={firstUser.UserId}, Name={firstUser.Username}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"DEBUG USERINFO: Error querying users: {ex.Message}");
+                }
+                return Unauthorized(new { error = "invalid_token", error_description = "The user is no longer active." });
+            }
+
+            var claims = new Dictionary<string, object>(StringComparer.Ordinal)
+            {
+                [OpenIddictConstants.Claims.Subject] = userId,
+                [OpenIddictConstants.Claims.Name] = dbUser.Username,
+            };
+
+            if (!string.IsNullOrEmpty(dbUser.Email))
+            {
+                claims[OpenIddictConstants.Claims.Email] = dbUser.Email;
+            }
+            if (dbUser.Phone > 0)
+            {
+                claims["phone"] = dbUser.Phone.ToString();
+            }
+
+            var roles = principal.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
+            claims["roles"] = roles;
+
+            return Ok(claims);
         }
     }
 }

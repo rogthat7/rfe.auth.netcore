@@ -54,8 +54,10 @@ namespace RFE.Auth.API.Models
             // 2. Ensure Applications
             var appFish = databaseContext.Apps.FirstOrDefault(a => a.AppName == "fish-tracker") ?? new Application { AppName = "fish-tracker", DisplayName = "Fish Tracker" };
             var appAuth = databaseContext.Apps.FirstOrDefault(a => a.AppName == "rfe-auth") ?? new Application { AppName = "rfe-auth", DisplayName = "RFE Auth" };
+            var appGlam = databaseContext.Apps.FirstOrDefault(a => a.AppName == "rfe-glam-app") ?? new Application { AppName = "rfe-glam-app", DisplayName = "RFE Glam App" };
             if (appFish.AppId == Guid.Empty) databaseContext.Apps.Add(appFish);
             if (appAuth.AppId == Guid.Empty) databaseContext.Apps.Add(appAuth);
+            if (appGlam.AppId == Guid.Empty) databaseContext.Apps.Add(appGlam);
             databaseContext.SaveChanges();
 
             // 3. Ensure AuthUsers
@@ -226,6 +228,43 @@ namespace RFE.Auth.API.Models
             else
             {
                 await manager.UpdateAsync(app, descriptor);
+            }
+
+            // Seed rfe-glam-app (third-party client)
+            var glamApp = await manager.FindByClientIdAsync("rfe-glam-app");
+            var glamDescriptor = new OpenIddict.Abstractions.OpenIddictApplicationDescriptor
+            {
+                ClientId = "rfe-glam-app",
+                DisplayName = "RFE Glam App",
+                ClientType = OpenIddict.Abstractions.OpenIddictConstants.ClientTypes.Public,
+                Permissions =
+                {
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Endpoints.Authorization,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Endpoints.Token,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.ResponseTypes.Code,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Scopes.Email,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Scopes.Profile,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Prefixes.Scope + "openid"
+                },
+                RedirectUris =
+                {
+                    new Uri("http://localhost:3000/oauth-callback"),
+                    new Uri("http://localhost:5173/oauth-callback"),
+                    new Uri("https://localhost:5173/oauth-callback"),
+                    new Uri("http://localhost:6000/oauth-callback"),
+                    new Uri("https://localhost:6000/oauth-callback")
+                }
+            };
+
+            if (glamApp == null)
+            {
+                await manager.CreateAsync(glamDescriptor);
+            }
+            else
+            {
+                await manager.UpdateAsync(glamApp, glamDescriptor);
             }
         }
     }

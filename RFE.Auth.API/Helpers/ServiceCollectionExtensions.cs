@@ -187,6 +187,8 @@ namespace RFE.Auth.API.Helpers
                 })
                 .AddServer(options =>
                 {
+                    options.SetIssuer(new Uri("https://localhost:5001/"));
+
                     options.SetAuthorizationEndpointUris("connect/authorize")
                            .SetTokenEndpointUris("connect/token")
                            .SetUserInfoEndpointUris("connect/userinfo");
@@ -209,13 +211,15 @@ namespace RFE.Auth.API.Helpers
                            .EnableUserInfoEndpointPassthrough();
 
                     options.RequireProofKeyForCodeExchange();
-
-                    options.DisableAccessTokenEncryption();
                 })
                 .AddValidation(options =>
                 {
                     options.UseLocalServer();
                     options.UseAspNetCore();
+                    options.Configure(o =>
+                    {
+                        o.TokenValidationParameters.ValidIssuers = new[] { "https://localhost:5001/", "https://rfe-auth-api:5001/" };
+                    });
                 });
 
             return services;
