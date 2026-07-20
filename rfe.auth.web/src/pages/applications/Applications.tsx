@@ -10,8 +10,12 @@ import { toast } from 'sonner'
 import styles from './Applications.module.css'
 
 const ROLE_BADGE_MAP: Record<string, 'blue'|'indigo'|'orange'|'grey'> = {
-  Labourer: 'blue', JobCreator: 'indigo', Admin: 'orange', PanchayatAdmin: 'orange',
-  Laborer: 'blue', Employer: 'indigo'
+  // rfe-auth
+  Admin: 'orange', 'app-user': 'indigo', 'auth-user': 'blue',
+  // rfe-glam
+  Labourer: 'blue', JobCreator: 'indigo', PanchayatAdmin: 'grey',
+  // legacy aliases
+  Laborer: 'blue', Employer: 'indigo',
 }
 
 const getAppColor = (appId: string) => {
@@ -219,11 +223,23 @@ export default function Applications() {
           <div className={styles.field}>
             <label>Allowed Roles</label>
             <div className={styles.checkboxGroup}>
-              {['Admin', 'PanchayatAdmin', 'Labourer', 'JobCreator', 'Laborer', 'Employer'].map((r) => (
+              <span className={styles.hint} style={{ marginBottom: 4 }}>rfe-auth</span>
+              {['Admin', 'app-user', 'auth-user'].map((r) => (
                 <label key={r} className={styles.checkboxLabel}>
-                  <input 
-                    type="checkbox" 
-                    className={styles.checkbox} 
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
+                    checked={allowedRoles.includes(r)}
+                    onChange={() => handleRoleToggle(r)}
+                  /> {r}
+                </label>
+              ))}
+              <span className={styles.hint} style={{ marginTop: 6, marginBottom: 4 }}>rfe-glam</span>
+              {['PanchayatAdmin', 'JobCreator', 'Labourer'].map((r) => (
+                <label key={r} className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    className={styles.checkbox}
                     checked={allowedRoles.includes(r)}
                     onChange={() => handleRoleToggle(r)}
                   /> {r}
