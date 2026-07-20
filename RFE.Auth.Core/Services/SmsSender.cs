@@ -47,6 +47,12 @@ namespace RFE.Auth.Core.Services
                 throw new ArgumentNullException(nameof(phoneNumber));
             }
 
+            var cleanPhone = phoneNumber.Replace(" ", "").Replace("\t", "");
+            if (!cleanPhone.StartsWith("+") && cleanPhone != "Unknown")
+            {
+                cleanPhone = "+" + cleanPhone;
+            }
+
             try
             {
                 var client = _httpClientFactory.CreateClient("CommunicationService");
@@ -54,7 +60,7 @@ namespace RFE.Auth.Core.Services
 
                 var payload = new
                 {
-                    phoneNumber = phoneNumber,
+                    phoneNumber = cleanPhone,
                     message = message
                 };
 

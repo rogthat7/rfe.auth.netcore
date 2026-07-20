@@ -503,6 +503,69 @@ namespace RFE.Auth.API.Controllers
         }
 
         /// <summary>
+        /// Sends a 6-digit verification code to the user's phone.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("sendconfirmationphone")]
+        public async Task<IActionResult> SendConfirmationPhone([FromBody] SendPhoneConfirmationRequest model)
+        {
+            if (model == null || model.Phone == 0)
+                return BadRequest(new { success = false, message = "Phone is required." });
+
+            var username = model.Username ?? model.Phone.ToString();
+            var role = model.Role ?? "appUser";
+            var appId = model.AppId ?? "rfe-glam-app";
+
+            var userDto = new AuthUserAddPostRequestDto
+            {
+                Username = username,
+                Password = model.Password,
+                Phone = model.Phone,
+                Email = null
+            };
+
+            var mappedUser = _mapper.Map<AuthUser>(userDto);
+            mappedUser.Password = EncryptionHelper.EncodePasswordToBase64(model.Password);
+
+            // Generate 6-digit OTP code
+            var random = new Random();
+            var code = random.Next(100000, 999999).ToString();
+
+            // Store user info and code in JWT payload
+            var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_jwtOptions.Value.JwtKeyForEmail));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
+
+            var claims = new[] {
+                new Claim("payload", JsonConvert.SerializeObject(mappedUser)),
+                new Claim("code", code),
+                new Claim("role", role),
+                new Claim("app", appId)
+            };
+
+            var otpToken = new JwtSecurityToken(
+                _jwtOptions.Value.Issuer, null, claims,
+                DateTime.UtcNow,
+                expires: DateTime.UtcNow.AddMinutes(10),
+                signingCredentials: credentials);
+            var jwtPayload = new JwtSecurityTokenHandler().WriteToken(otpToken);
+
+            // Send confirmation code via SMS
+            var smsSent = await _smsSender.SendUserConfirmationSms(mappedUser, code);
+
+            return Ok(new
+            {
+                success = true,
+                verificationMethod = "phone",
+                tokenPayload = jwtPayload,
+                devOtp = smsSent ? null : code,
+                message = smsSent
+                    ? "Verification code sent via SMS"
+                    : "SMS sending failed (not configured) — use devOtp for testing",
+                status = "OK"
+            });
+        }
+
+        /// <summary>
         /// Sends a 6-digit verification code to the user's email.
         /// </summary>
         [AllowAnonymous]
@@ -786,6 +849,15 @@ namespace RFE.Auth.API.Controllers
         public string Password { get; set; }
         public string Role { get; set; }
         public string AppId { get; set; }
+    }
+
+    public class SendPhoneConfirmationRequest
+    {
+        public string Username { get; set; }
+        public long Phone { get; set; }
+        public string Password { get; set; }
+        public string Role { get; set; }
+        public string? AppId { get; set; }
     }
 
     public class ConfirmEmailRequest
