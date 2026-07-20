@@ -14,6 +14,8 @@ using RFE.Auth.Core.Interfaces.Services;
 using RFE.Auth.Core.Models.Auth;
 using RFE.Auth.Core.Models.Shared;
 using RFE.Auth.Core.Models.User;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace RFE.Auth.Tests
 {
@@ -52,6 +54,8 @@ namespace RFE.Auth.Tests
                 .Setup(s => s.GetAllRegisteredUsers())
                 .ReturnsAsync(new List<AuthUserByIdGetResponse>());
 
+            var dbContextMock = new Mock<DatabaseContext>(new DbContextOptions<DatabaseContext>());
+            var loggerMock = new Mock<ILogger<UserController>>();
             _controller = new UserController(
                 _userServiceMock.Object,
                 _jwtAuthServiceMock.Object,
@@ -59,7 +63,9 @@ namespace RFE.Auth.Tests
                 _emailSenderMock.Object,
                 _smsSenderMock.Object,
                 _jwtOptionsMock.Object,
-                _authServiceMock.Object
+                _authServiceMock.Object,
+                dbContextMock.Object,
+                loggerMock.Object
             );
 
             // Mock HttpContext for SignInAsync

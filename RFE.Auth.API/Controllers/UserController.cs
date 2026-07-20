@@ -22,6 +22,9 @@ using RFE.Auth.API.Models.Examples;
 using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Interfaces.Services;
 using RFE.Auth.Core.Models.Auth;
+using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
+using RFE.Auth.Core.Models.App;
 using RFE.Auth.Core.Models.Email;
 using RFE.Auth.Core.Models.Shared;
 using RFE.Auth.Core.Models.User;
@@ -42,6 +45,8 @@ namespace RFE.Auth.API.Controllers
         private readonly IEmailSender _emailSender;
         private readonly ISmsSender _smsSender;
         private readonly IAuthService _authService;
+        private readonly DatabaseContext _dbContext;
+        private readonly ILogger<UserController> _logger;
 
         /// <summary>
         /// UserController
@@ -59,7 +64,9 @@ namespace RFE.Auth.API.Controllers
                                  IEmailSender emailSender,
                                  ISmsSender smsSender,
                                  IOptions<JwtOptions> jwtoptions,
-                                 IAuthService authService): base (jwtoptions)
+                                 IAuthService authService,
+                                 DatabaseContext dbContext,
+                                 ILogger<UserController> logger): base (jwtoptions)
         {
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
@@ -67,6 +74,8 @@ namespace RFE.Auth.API.Controllers
             _authuserService = authuserService ?? throw new ArgumentNullException(nameof(authuserService));
             _JwtAuthService = jwtAuthService ?? throw new ArgumentNullException(nameof(jwtAuthService));
             _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         } 
         /// <summary>
         /// Authenticate
@@ -814,6 +823,189 @@ namespace RFE.Auth.API.Controllers
                 </html>";
             return Content(html, "text/html");
         }
+
+        /// <summary>
+        /// RequestPasswordRecovery — requests a code for password recovery.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("recover-password/request")]
+        public async Task<IActionResult> RequestPasswordRecovery([FromBody] PasswordRecoveryRequest model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.Identifier) || string.IsNullOrWhiteSpace(model.Method) || string.IsNullOrWhiteSpace(model.AppId))
+                return BadRequest(new { success = false, message = "Identifier, Method, and AppId are required." });
+
+            var method = model.Method.ToLower();
+            if (method != "email" && method != "phone")
+                return BadRequest(new { success = false, message = "Method must be 'email' or 'phone'." });
+
+            // Ensure only registered apps can make these requests
+            var app = await _dbContext.Apps.FirstOrDefaultAsync(a => a.AppName == model.AppId);
+            if (app == null)
+            {
+                _logger.LogWarning("Unauthorized password recovery request from unregistered app: {AppId}", model.AppId);
+                return Unauthorized(new { success = false, message = $"Application '{model.AppId}' is not registered." });
+            }
+
+            // Track request
+            _logger.LogInformation("Password recovery requested. App: {AppName} ({DisplayName}), Method: {Method}, Identifier: {Identifier}", 
+                app.AppName, app.DisplayName, method, model.Identifier);
+
+            // Find user
+            AuthUser user = null;
+            if (method == "email")
+            {
+                user = await _dbContext.AuthUsers.FirstOrDefaultAsync(u => u.Email == model.Identifier);
+            }
+            else // phone
+            {
+                if (long.TryParse(model.Identifier.Replace(" ", "").Replace("\t", ""), out long phoneLong))
+                {
+                    user = await _dbContext.AuthUsers.FirstOrDefaultAsync(u => u.Phone == phoneLong);
+                }
+            }
+
+            // Return appropriate error if the user doesn't exist
+            if (user == null)
+            {
+                _logger.LogWarning("Password recovery requested for non-existent user: {Identifier} via {Method} on App: {AppId}", model.Identifier, method, model.AppId);
+                var errorMsg = method == "email" 
+                    ? "No user found with the provided email address." 
+                    : "No user found with the provided phone number.";
+                return NotFound(new { success = false, message = errorMsg });
+            }
+
+            // Generate 6-digit OTP code
+            var random = new Random();
+            var code = random.Next(100000, 999999).ToString();
+
+            // Store user info and code in signed JWT payload
+            var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_jwtOptions.Value.JwtKeyForEmail));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
+
+            var claims = new[] {
+                new Claim("userId", user.UserId.ToString()),
+                new Claim("code", code),
+                new Claim("app", model.AppId)
+            };
+
+            var otpToken = new JwtSecurityToken(
+                _jwtOptions.Value.Issuer, null, claims,
+                DateTime.UtcNow,
+                expires: DateTime.UtcNow.AddMinutes(15),
+                signingCredentials: credentials);
+            var jwtPayload = new JwtSecurityTokenHandler().WriteToken(otpToken);
+
+            // Send confirmation code
+            bool sentSuccess = false;
+            if (method == "email")
+            {
+                var subject = $"{app.DisplayName} Password Recovery";
+                var emailBody = $"Your password recovery code is: {code}";
+                sentSuccess = await _emailSender.SendGeneralEmail(user.Email, subject, emailBody);
+            }
+            else // phone
+            {
+                var smsMessage = $"Your {app.DisplayName} password recovery code is: {code}";
+                sentSuccess = await _smsSender.SendGeneralSms(user.Phone.ToString(), smsMessage);
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "If the account exists, a recovery code has been sent.",
+                tokenPayload = jwtPayload,
+                devOtp = sentSuccess ? null : code // Expose OTP in dev mode if sending fails/is mock
+            });
+        }
+
+        /// <summary>
+        /// ResetPassword — resets the user's password using the recovery code.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("recover-password/reset")]
+        public async Task<IActionResult> ResetPassword([FromBody] PasswordResetRequest model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.TokenPayload) || string.IsNullOrWhiteSpace(model.Code) || string.IsNullOrWhiteSpace(model.NewPassword))
+                return BadRequest(new { success = false, message = "TokenPayload, Code, and NewPassword are required." });
+
+            try
+            {
+                // Verify JWT token payload
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var validationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_jwtOptions.Value.JwtKeyForEmail)),
+                    ValidateIssuer = true,
+                    ValidIssuer = _jwtOptions.Value.Issuer,
+                    ValidateAudience = false,
+                    ClockSkew = TimeSpan.Zero
+                };
+
+                ClaimsPrincipal principal;
+                try
+                {
+                    principal = tokenHandler.ValidateToken(model.TokenPayload, validationParameters, out SecurityToken validatedToken);
+                }
+                catch (Exception)
+                {
+                    return BadRequest(new { success = false, message = "Invalid or expired recovery token." });
+                }
+
+                var codeClaim = principal.FindFirst("code")?.Value;
+                var userIdClaim = principal.FindFirst("userId")?.Value;
+                var appClaim = principal.FindFirst("app")?.Value;
+
+                if (string.IsNullOrEmpty(codeClaim) || string.IsNullOrEmpty(userIdClaim) || string.IsNullOrEmpty(appClaim))
+                    return BadRequest(new { success = false, message = "Malformed recovery token." });
+
+                if (model.Code != codeClaim)
+                    return BadRequest(new { success = false, message = "Invalid recovery code." });
+
+                // Check registered app check again
+                var app = await _dbContext.Apps.FirstOrDefaultAsync(a => a.AppName == appClaim);
+                if (app == null)
+                {
+                    return Unauthorized(new { success = false, message = $"Application '{appClaim}' is not registered." });
+                }
+
+                if (!Guid.TryParse(userIdClaim, out Guid userId))
+                    return BadRequest(new { success = false, message = "Invalid user identification in token." });
+
+                var user = await _dbContext.AuthUsers.FirstOrDefaultAsync(u => u.UserId == userId);
+                if (user == null)
+                    return NotFound(new { success = false, message = "User not found." });
+
+                // Update password
+                user.Password = EncryptionHelper.EncodePasswordToBase64(model.NewPassword);
+                _dbContext.AuthUsers.Update(user);
+                await _dbContext.SaveChangesAsync();
+
+                // Track the successful reset
+                _logger.LogInformation("Password successfully reset for UserId: {UserId} via App: {AppId}", user.UserId, appClaim);
+
+                return Ok(new { success = true, message = "Password reset successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during password reset.");
+                return StatusCode(500, new { success = false, message = "An error occurred while resetting your password." });
+            }
+        }
+    }
+
+    public class PasswordRecoveryRequest
+    {
+        public string Identifier { get; set; } // Email or Phone number
+        public string Method { get; set; }     // "email" or "phone"
+        public string AppId { get; set; }      // Application identifier, e.g. "rfe-glam-app"
+    }
+
+    public class PasswordResetRequest
+    {
+        public string TokenPayload { get; set; }
+        public string Code { get; set; }
+        public string NewPassword { get; set; }
     }
 
     public class LoginRequestModel
