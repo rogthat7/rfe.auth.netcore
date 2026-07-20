@@ -287,5 +287,41 @@ namespace RFE.Auth.Tests
             Assert.That(contentResult.ContentType, Is.EqualTo("text/html"));
             Assert.That(contentResult.Content, Does.Contain("oauth-success"));
         }
+
+        [Test]
+        public async Task SendConfirmationEmail_WithValidRequest_ReturnsOk_WithVerificationMethodEmail()
+        {
+            // Arrange
+            var request = new SendEmailConfirmationRequest
+            {
+                Email = "newuser@example.com",
+                Password = "Password123",
+                Role = "appUser",
+                AppId = "rfe-glam"
+            };
+
+            _userServiceMock
+                .Setup(s => s.GetAllRegisteredUsers())
+                .ReturnsAsync(new List<AuthUserByIdGetResponse>());
+
+            _mapperMock
+                .Setup(m => m.Map<AuthUser>(It.IsAny<AuthUserAddPostRequestDto>()))
+                .Returns(new AuthUser { Username = "newuser@example.com", Email = "newuser@example.com" });
+
+            _emailSenderMock
+                .Setup(s => s.SendGeneralEmail(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync(true);
+
+            // Act
+            var result = await _controller.SendConfirmationEmail(request);
+
+            // Assert
+            Assert.That(result, Is.InstanceOf<OkObjectResult>());
+            var okResult = (OkObjectResult)result;
+            var verificationMethod = GetPropertyValue(okResult.Value, "verificationMethod");
+            Assert.That(verificationMethod, Is.EqualTo("email"));
+            var tokenPayload = GetPropertyValue(okResult.Value, "tokenPayload");
+            Assert.That(tokenPayload, Is.Not.Null);
+        }
     }
 }

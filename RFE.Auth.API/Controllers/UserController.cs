@@ -503,6 +503,147 @@ namespace RFE.Auth.API.Controllers
         }
 
         /// <summary>
+        /// Sends a 6-digit verification code to the user's email.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("sendconfirmationemail")]
+        public async Task<IActionResult> SendConfirmationEmail([FromBody] SendEmailConfirmationRequest model)
+        {
+            if (model == null || string.IsNullOrEmpty(model.Email))
+                return BadRequest(new { success = false, message = "Email is required." });
+
+            var username = model.Email;
+            var role = model.Role ?? "appUser";
+            var appId = model.AppId ?? "rfe-glam-app";
+
+            // Check if username/email is already taken (bypassed to allow OTP verification/resend & Glam integration for existing users)
+
+            var userDto = new AuthUserAddPostRequestDto
+            {
+                Username = username,
+                Password = model.Password,
+                Email = model.Email
+            };
+
+            var mappedUser = _mapper.Map<AuthUser>(userDto);
+            mappedUser.Password = EncryptionHelper.EncodePasswordToBase64(model.Password);
+
+            // Generate 6-digit OTP code
+            var random = new Random();
+            var code = random.Next(100000, 999999).ToString();
+
+            // Store user info and code in JWT payload
+            var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_jwtOptions.Value.JwtKeyForEmail));
+            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
+
+            var claims = new[] {
+                new Claim("payload", JsonConvert.SerializeObject(mappedUser)),
+                new Claim("code", code),
+                new Claim("role", role),
+                new Claim("app", appId)
+            };
+
+            var otpToken = new JwtSecurityToken(
+                _jwtOptions.Value.Issuer, null, claims,
+                DateTime.UtcNow,
+                expires: DateTime.UtcNow.AddMinutes(10),
+                signingCredentials: credentials);
+            var jwtPayload = new JwtSecurityTokenHandler().WriteToken(otpToken);
+
+            // Send confirmation code via email
+            var displayName = appId?.ToLowerInvariant() switch
+            {
+                "fish-tracker" or "fish-tracker-app" => "Fish Tracker",
+                "rfe-glam-app" or "rfe-glam" => "RFE Glam",
+                _ => "RFE Auth"
+            };
+            var subject = $"Confirm your {displayName} account";
+            var body = $"Your verification code is: <strong>{code}</strong>. It will expire in 10 minutes.";
+
+            var emailSent = await _emailSender.SendGeneralEmail(model.Email, subject, body);
+
+            return Ok(new
+            {
+                success = true,
+                verificationMethod = "email",
+                tokenPayload = jwtPayload,
+                devOtp = emailSent ? null : code,
+                message = emailSent
+                    ? "Verification code sent via email"
+                    : "Email sending failed (SMTP configuration error) — use devOtp for testing"
+            });
+        }
+
+        /// <summary>
+        /// ConfirmUserWithEmail — validates the OTP code and activates the user account.
+        /// </summary>
+        [AllowAnonymous]
+        [HttpPost("confirmuserwithemail")]
+        public async Task<ActionResult> ConfirmUserWithEmail([FromBody] ConfirmEmailRequest request)
+        {
+            if (request == null || string.IsNullOrEmpty(request.TokenPayload) || string.IsNullOrEmpty(request.Code))
+            {
+                return BadRequest("Invalid request parameters");
+            }
+
+            var handler = new JwtSecurityTokenHandler();
+            JwtSecurityToken jwtSecurityToken;
+            try
+            {
+                jwtSecurityToken = handler.ReadJwtToken(request.TokenPayload);
+            }
+            catch (Exception)
+            {
+                return BadRequest("Invalid token payload");
+            }
+
+            if (!ValidateToken(jwtSecurityToken))
+            {
+                return BadRequest("Token expired or invalid, please register again");
+            }
+
+            // Verify code
+            var codeClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "code").Value?.ToString();
+            if (codeClaim != request.Code)
+            {
+                return BadRequest("Verification code is incorrect");
+            }
+
+            var payloadClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "payload").Value?.ToString();
+            if (string.IsNullOrEmpty(payloadClaim))
+            {
+                return BadRequest("Invalid token content");
+            }
+
+            var roleClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "role").Value?.ToString() ?? "appUser";
+            var appClaim = jwtSecurityToken.Payload.FirstOrDefault(data => data.Key == "app").Value?.ToString() ?? "rfe-auth";
+
+            var model = JsonConvert.DeserializeObject<AuthUser>(payloadClaim);
+            try
+            {
+                await _authuserService.AddNewAuthUser(model, roleClaim, appClaim);
+                await _authuserService.MarkUserAsVerified(model.Username);
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.Contains("23505") || ex.InnerException?.Message.Contains("23505") == true ||
+                    ex.Message.Contains("unique constraint") || ex.InnerException?.Message.Contains("unique constraint") == true)
+                {
+                    return BadRequest("User already exists or has been verified by another session.");
+                }
+                throw;
+            }
+
+            return Ok(new
+            {
+                success = true,
+                message = "Email verified! Account created successfully.",
+                status = "OK"
+            });
+        }
+
+
+        /// <summary>
         /// Gets a JWT token for the currently cookie-authenticated user.
         /// </summary>
         [Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
@@ -637,5 +778,19 @@ namespace RFE.Auth.API.Controllers
         public string Identifier { get; set; }
         public string Method     { get; set; } // "phone" or "email"
         public string Password   { get; set; }
+    }
+
+    public class SendEmailConfirmationRequest
+    {
+        public string Email { get; set; }
+        public string Password { get; set; }
+        public string Role { get; set; }
+        public string AppId { get; set; }
+    }
+
+    public class ConfirmEmailRequest
+    {
+        public string TokenPayload { get; set; }
+        public string Code { get; set; }
     }
 }

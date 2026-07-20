@@ -211,6 +211,8 @@ namespace RFE.Auth.API.Helpers
                            .EnableUserInfoEndpointPassthrough();
 
                     options.RequireProofKeyForCodeExchange();
+
+                    options.DisableAccessTokenEncryption();
                 })
                 .AddValidation(options =>
                 {

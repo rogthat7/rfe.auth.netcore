@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: YourStrongPassword123!
       POSTGRES_DB: rfe-auth
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - auth_data:/var/lib/postgresql/data
     healthcheck:
@@ -27,6 +27,7 @@ services:
       - ConnectionStrings__DefaultConection=Host=rfe-auth-db;Port=5432;Database=rfe-auth;Username=postgres;Password=YourStrongPassword123!
       - PostgresDockerConfig__PostgresServer=rfe-auth-db
       - ASPNETCORE_URLS=https://+:5001
+      - CommunicationServiceConfiguration__BaseUrl=http://rfe-comm-api:5010
       - Authentication__Github__ClientId=${GITHUB_CLIENT_ID}
       - Authentication__Github__ClientSecret=${GITHUB_CLIENT_SECRET}
       - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
@@ -40,7 +41,7 @@ services:
     container_name: rfe-auth-web
     ports:
       - "3001:443"
-      - "3000:80"
+      - "3002:80"
     volumes:
       - ./certs:/certs
     depends_on:

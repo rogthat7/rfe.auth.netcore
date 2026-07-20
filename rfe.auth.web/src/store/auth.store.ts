@@ -29,11 +29,15 @@ function decodeJwt(token: string): CurrentUser | null {
         }
       }
     }
+    let roleVal = payload.role || 'authUser'
+    if (Array.isArray(roleVal)) {
+      roleVal = roleVal[0] || 'authUser'
+    }
     return {
       id: payload.userId || payload.sub || '',
       name: payload.userName || payload.name || payload.email || 'User',
       phone: payload.phone || '',
-      role: payload.role || 'authUser',
+      role: roleVal,
       apps: appsArray,
     }
   } catch { return null }

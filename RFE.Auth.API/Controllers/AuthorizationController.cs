@@ -406,6 +406,13 @@ namespace RFE.Auth.API.Controllers
             var roles = principal.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
             claims["roles"] = roles;
 
+            if (dbUser != null)
+            {
+                var userAppPermissions = await _authService.GetUserAppPermissions(parsedUserId);
+                var appArray = userAppPermissions.Select(a => a.AppName).ToArray();
+                claims["apps"] = appArray;
+            }
+
             return Ok(claims);
         }
     }

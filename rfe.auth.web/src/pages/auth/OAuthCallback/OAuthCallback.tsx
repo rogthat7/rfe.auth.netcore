@@ -23,11 +23,15 @@ function decodeJwt(token: string) {
         }
       }
     }
+    let roleVal = payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 'appUser'
+    if (Array.isArray(roleVal)) {
+      roleVal = roleVal[0] || 'appUser'
+    }
     return {
       id:    payload.userId || payload.sub || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || '',
       name:  payload.userName || payload.name || payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || 'Auth-',
       phone: payload.phone || '',
-      role:  payload.role || payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || 'appUser',
+      role:  roleVal,
       apps:  appsArray,
     }
   } catch { return null }

@@ -28,9 +28,22 @@ namespace RFE.Auth.Infrastructure.Repositories
                 throw new ArgumentNullException(nameof(entity));
             }
            
-            var newUserId = entity.UserId ?? Guid.NewGuid();
-            const string sql = @"INSERT INTO ""AUTH"".""AuthUser"" (""UserId"", ""Email"", ""Username"", ""Password"", ""Phone"", ""IsVerified"") VALUES (@UserId, @Email, @Username, @Password, @Phone, @IsVerified) RETURNING ""UserId""";
-            var userId = await _unitOfWork.DbConnection.QuerySingleAsync<Guid>(sql, new { UserId = newUserId, entity.Email, entity.Username, entity.Password, entity.Phone, entity.IsVerified });
+            const string checkUserSql = @"SELECT ""UserId"" FROM ""AUTH"".""AuthUser"" WHERE ""Username"" = @Username";
+            var existingUserId = await _unitOfWork.DbConnection.QueryFirstOrDefaultAsync<Guid?>(checkUserSql, new { Username = entity.Username });
+            Guid userId;
+
+            if (existingUserId == null)
+            {
+                var newUserId = entity.UserId ?? Guid.NewGuid();
+                const string sql = @"INSERT INTO ""AUTH"".""AuthUser"" (""UserId"", ""Email"", ""Username"", ""Password"", ""Phone"", ""IsVerified"") VALUES (@UserId, @Email, @Username, @Password, @Phone, @IsVerified) RETURNING ""UserId""";
+                userId = await _unitOfWork.DbConnection.QuerySingleAsync<Guid>(sql, new { UserId = newUserId, entity.Email, entity.Username, entity.Password, entity.Phone, entity.IsVerified });
+            }
+            else
+            {
+                userId = existingUserId.Value;
+                const string updatePwdSql = @"UPDATE ""AUTH"".""AuthUser"" SET ""Password"" = @Password WHERE ""UserId"" = @UserId";
+                await _unitOfWork.DbConnection.ExecuteAsync(updatePwdSql, new { Password = entity.Password, UserId = userId });
+            }
 
             // Find the target app ID
             const string findAppSql = @"SELECT ""AppId"" FROM ""AUTH"".""Application"" WHERE ""AppName"" = @AppName";
@@ -55,9 +68,14 @@ namespace RFE.Auth.Infrastructure.Repositories
 
             if (roleId != null)
             {
-                // Link user to role for rfe-auth app
-                const string insertUserRoleSql = @"INSERT INTO ""AUTH"".""UserRole"" (""UserRoleId"", ""UserId"", ""RoleId"", ""AppId"") VALUES (@UserRoleId, @UserId, @RoleId, @AppId)";
-                await _unitOfWork.DbConnection.ExecuteAsync(insertUserRoleSql, new { UserRoleId = Guid.NewGuid(), UserId = userId, RoleId = roleId.Value, AppId = appId.Value });
+                const string checkRoleSql = @"SELECT 1 FROM ""AUTH"".""UserRole"" WHERE ""UserId"" = @UserId AND ""RoleId"" = @RoleId AND ""AppId"" = @AppId";
+                var hasRole = await _unitOfWork.DbConnection.QueryFirstOrDefaultAsync<int?>(checkRoleSql, new { UserId = userId, RoleId = roleId.Value, AppId = appId.Value });
+                if (hasRole == null)
+                {
+                    // Link user to role for rfe-auth app
+                    const string insertUserRoleSql = @"INSERT INTO ""AUTH"".""UserRole"" (""UserRoleId"", ""UserId"", ""RoleId"", ""AppId"") VALUES (@UserRoleId, @UserId, @RoleId, @AppId)";
+                    await _unitOfWork.DbConnection.ExecuteAsync(insertUserRoleSql, new { UserRoleId = Guid.NewGuid(), UserId = userId, RoleId = roleId.Value, AppId = appId.Value });
+                }
             }
 
             // Find default permission "modbase" or first available
@@ -71,9 +89,14 @@ namespace RFE.Auth.Infrastructure.Repositories
 
             if (permId != null)
             {
-                // Insert User App Permission mapping
-                const string insertUserAppPermSql = @"INSERT INTO ""AUTH"".""UserAppPermission"" (""UAPId"", ""UserId"", ""AppId"", ""PermissionId"") VALUES (@UAPId, @UserId, @AppId, @PermissionId)";
-                await _unitOfWork.DbConnection.ExecuteAsync(insertUserAppPermSql, new { UAPId = Guid.NewGuid(), UserId = userId, AppId = appId.Value, PermissionId = permId.Value });
+                const string checkPermSql = @"SELECT 1 FROM ""AUTH"".""UserAppPermission"" WHERE ""UserId"" = @UserId AND ""AppId"" = @AppId AND ""PermissionId"" = @PermissionId";
+                var hasPerm = await _unitOfWork.DbConnection.QueryFirstOrDefaultAsync<int?>(checkPermSql, new { UserId = userId, AppId = appId.Value, PermissionId = permId.Value });
+                if (hasPerm == null)
+                {
+                    // Insert User App Permission mapping
+                    const string insertUserAppPermSql = @"INSERT INTO ""AUTH"".""UserAppPermission"" (""UAPId"", ""UserId"", ""AppId"", ""PermissionId"") VALUES (@UAPId, @UserId, @AppId, @PermissionId)";
+                    await _unitOfWork.DbConnection.ExecuteAsync(insertUserAppPermSql, new { UAPId = Guid.NewGuid(), UserId = userId, AppId = appId.Value, PermissionId = permId.Value });
+                }
             }
         }
 

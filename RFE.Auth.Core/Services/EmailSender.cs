@@ -75,12 +75,15 @@ namespace RFE.Auth.Core.Services
                     htmlBody = htmlBody.Replace($"images/{pair.Key}", $"cid:{pair.Value}");
                 }
 
+                var branding = GetAppBranding(appId);
+                var subject = $"Confirm your {branding.DisplayName} account";
+
                 var request = new SendEmailRequest
                 {
                     To = new List<string> { authUser.Email },
-                    Subject = DEFAULT_USER_CONFIRMATION_SUBJECT,
+                    Subject = subject,
                     Body = htmlBody,
-                    InlineAttachments = inlineAttachments
+                    InlineAttachments = htmlBody.Contains("cid:") ? inlineAttachments : new List<InlineAttachmentDto>()
                 };
 
                 return await SendEmailApiAsync(request);
@@ -153,9 +156,59 @@ namespace RFE.Auth.Core.Services
             var jwtPayLoad = new JwtSecurityTokenHandler().WriteToken(token);
             var baseDir = AppContext.BaseDirectory;
             var strHtml = await File.ReadAllTextAsync(Path.Combine(baseDir, "Resources", "email.html"));
+            
+            var branding = GetAppBranding(appId);
+
             strHtml = strHtml.Replace("#username", authUser.Email);
             strHtml = strHtml.Replace("#confirmationlink", $"https://localhost:5001/api/auth/v1/User/confirmuserwithconfirmationlink?tokenPayload={jwtPayLoad}");
+            strHtml = strHtml.Replace("#appname", branding.DisplayName);
+            strHtml = strHtml.Replace("#apptagline", branding.Tagline);
+            strHtml = strHtml.Replace("#brandcolor", branding.BrandColor);
+            strHtml = strHtml.Replace("#accentcolor", branding.AccentColor);
+            strHtml = strHtml.Replace("#applink", branding.AppUrl);
+            strHtml = strHtml.Replace("#year", DateTime.UtcNow.Year.ToString());
+
             return strHtml;
+        }
+
+        private class AppBranding
+        {
+            public string DisplayName { get; set; } = string.Empty;
+            public string Tagline { get; set; } = string.Empty;
+            public string BrandColor { get; set; } = "#4f46e5";
+            public string AccentColor { get; set; } = "#e0e7ff";
+            public string AppUrl { get; set; } = "https://localhost:3000";
+        }
+
+        private AppBranding GetAppBranding(string appId)
+        {
+            return appId?.ToLowerInvariant() switch
+            {
+                "fish-tracker" or "fish-tracker-app" => new AppBranding
+                {
+                    DisplayName = "Fish Tracker",
+                    Tagline = "Track your catches and navigate the waters with ease.",
+                    BrandColor = "#0284c7",
+                    AccentColor = "#f0f9ff",
+                    AppUrl = "https://localhost:3002"
+                },
+                "rfe-glam-app" or "rfe-glam" => new AppBranding
+                {
+                    DisplayName = "RFE Glam",
+                    Tagline = "Connecting Panchayat administrations, local employers, and laborers.",
+                    BrandColor = "#059669",
+                    AccentColor = "#ecfdf5",
+                    AppUrl = "https://localhost:5173"
+                },
+                _ => new AppBranding
+                {
+                    DisplayName = "RFE Auth",
+                    Tagline = "Secure, unified authentication for the RFE ecosystem.",
+                    BrandColor = "#4f46e5",
+                    AccentColor = "#e0e7ff",
+                    AppUrl = "https://localhost:3001"
+                }
+            };
         }
 
         // Inner request contract DTOs matching the Communication API structure
