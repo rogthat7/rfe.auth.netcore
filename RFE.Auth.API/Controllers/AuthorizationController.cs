@@ -120,27 +120,55 @@ namespace RFE.Auth.API.Controllers
                         Password = encodedPass,
                         IsVerified = true
                     };
-
-                    // Determine the role from the state parameter if passed, or default to a role
-                    var roleName = "Laborer"; // Default role
-                    var state = request.State;
-                    if (!string.IsNullOrEmpty(state))
-                    {
-                        if (state.Equals("Employer", StringComparison.OrdinalIgnoreCase) || state.Equals("JobCreator", StringComparison.OrdinalIgnoreCase))
-                        {
-                            roleName = "Employer";
-                        }
-                        else if (state.Equals("Laborer", StringComparison.OrdinalIgnoreCase) || state.Equals("Labourer", StringComparison.OrdinalIgnoreCase))
-                        {
-                            roleName = "Laborer";
-                        }
-                    }
-
-                    await _userService.AddNewAuthUser(dbUser, roleName);
-
-                    // Re-fetch to get the populated UserId
-                    dbUser = await _context.AuthUsers.FirstOrDefaultAsync(u => u.Email == email);
                 }
+            }
+
+            // Ensure the user is linked to the target application requesting authorization
+            if (dbUser != null)
+            {
+                var targetApp = "rfe-auth";
+                if (!string.IsNullOrEmpty(request.ClientId))
+                {
+                    if (request.ClientId.Equals("rfe-glam-app", StringComparison.OrdinalIgnoreCase) || 
+                        request.ClientId.Equals("rfe-glam", StringComparison.OrdinalIgnoreCase))
+                    {
+                        targetApp = "rfe-glam-app";
+                    }
+                    else if (request.ClientId.Equals("rfe-auth-app", StringComparison.OrdinalIgnoreCase))
+                    {
+                        targetApp = "rfe-auth";
+                    }
+                    else
+                    {
+                        targetApp = request.ClientId;
+                    }
+                }
+
+                // Determine the role from the state parameter if passed, or default to a role
+                var roleName = "Laborer"; // Default role for RFE Glam
+                var state = request.State;
+                if (!string.IsNullOrEmpty(state))
+                {
+                    if (state.Equals("Employer", StringComparison.OrdinalIgnoreCase) || state.Equals("JobCreator", StringComparison.OrdinalIgnoreCase))
+                    {
+                        roleName = "Employer";
+                    }
+                    else if (state.Equals("Laborer", StringComparison.OrdinalIgnoreCase) || state.Equals("Labourer", StringComparison.OrdinalIgnoreCase))
+                    {
+                        roleName = "Laborer";
+                    }
+                }
+
+                // If logging into rfe-auth, map to authUser
+                if (targetApp == "rfe-auth" && roleName == "Laborer")
+                {
+                    roleName = "authUser";
+                }
+
+                await _userService.AddNewAuthUser(dbUser, roleName, targetApp);
+
+                // Re-fetch to get the populated UserId and verify changes are loaded
+                dbUser = await _context.AuthUsers.FirstOrDefaultAsync(u => u.Email == dbUser.Email);
             }
 
             var userId = dbUser?.UserId?.ToString() ?? nameIdentifier;

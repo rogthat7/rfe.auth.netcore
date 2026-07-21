@@ -303,15 +303,6 @@ export default function Roles() {
             <span className={styles.colTitle}>
               <Shield size={15} /> Roles
             </span>
-            <button
-              id="add-role-btn"
-              className={styles.addRoleBtn}
-              onClick={() => setAddRoleOpen(true)}
-              title="Add role"
-              aria-label="Add new role"
-            >
-              <Plus size={15} />
-            </button>
           </div>
 
           {rolesLoading ? (
@@ -325,32 +316,44 @@ export default function Roles() {
               </Button>
             </div>
           ) : (
-            <ul className={styles.roleList} role="listbox" aria-label="Roles">
-              {roles.map((role) => (
-                <li
-                  key={role.id}
-                  id={`role-item-${role.id}`}
-                  role="option"
-                  aria-selected={role.id === selectedRoleId}
-                  className={[
-                    styles.roleItem,
-                    role.id === selectedRoleId ? styles.roleItemActive : '',
-                  ].join(' ')}
-                  onClick={() => setSelectedRoleId(role.id)}
+            <>
+              <ul className={styles.roleList} role="listbox" aria-label="Roles">
+                {roles.map((role) => (
+                  <li
+                    key={role.id}
+                    id={`role-item-${role.id}`}
+                    role="option"
+                    aria-selected={role.id === selectedRoleId}
+                    className={[
+                      styles.roleItem,
+                      role.id === selectedRoleId ? styles.roleItemActive : '',
+                    ].join(' ')}
+                    onClick={() => setSelectedRoleId(role.id)}
+                  >
+                    <RoleColorDot color={role.color} />
+                    <div className={styles.roleItemContent}>
+                      <span className={styles.roleItemName}>{role.name}</span>
+                      <span className={styles.roleItemMeta}>
+                        <Users size={11} /> {role.userCount.toLocaleString()} users
+                        &nbsp;·&nbsp;
+                        <Lock size={11} /> {role.permissions.length} perms
+                      </span>
+                    </div>
+                    <ChevronRight size={14} className={styles.roleChevron} />
+                  </li>
+                ))}
+              </ul>
+              <div className={styles.colFooter}>
+                <Button
+                  id="add-role-btn"
+                  className="_btn_40tw9_1 _primary_40tw9_29 _sm_40tw9_22"
+                  size="sm"
+                  onClick={() => setAddRoleOpen(true)}
                 >
-                  <RoleColorDot color={role.color} />
-                  <div className={styles.roleItemContent}>
-                    <span className={styles.roleItemName}>{role.name}</span>
-                    <span className={styles.roleItemMeta}>
-                      <Users size={11} /> {role.userCount.toLocaleString()} users
-                      &nbsp;·&nbsp;
-                      <Lock size={11} /> {role.permissions.length} perms
-                    </span>
-                  </div>
-                  <ChevronRight size={14} className={styles.roleChevron} />
-                </li>
-              ))}
-            </ul>
+                  <Plus size={14} /> Add Role
+                </Button>
+              </div>
+            </>
           )}
         </aside>
 

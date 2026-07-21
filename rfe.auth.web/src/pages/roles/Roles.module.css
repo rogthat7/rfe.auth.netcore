@@ -78,7 +78,6 @@
 .colHeader {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: var(--space-4) var(--space-4) var(--space-3);
   border-bottom: 1px solid var(--color-border);
   flex-shrink: 0;
@@ -94,17 +93,13 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-.addRoleBtn {
-  width: 28px; height: 28px;
-  border-radius: var(--radius-md);
-  background: var(--color-primary-dim);
-  color: var(--color-primary);
-  border: none;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: background 150ms var(--ease-out), transform 150ms var(--ease-out);
+.colFooter {
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.01);
+  align-self: center;
 }
-.addRoleBtn:hover { background: var(--color-primary); color: #fff; transform: scale(1.05); }
 
 .rolesLoading { padding: var(--space-6); font-size: var(--text-sm); color: var(--color-text-muted); text-align: center; }
 

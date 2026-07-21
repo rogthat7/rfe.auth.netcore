@@ -123,9 +123,9 @@ namespace RFE.Auth.API.Models
             var mappings = new[] {
                 (userSystemAdmin.UserId, roleAdmin.RoleId, appAuth.AppId),
                 (userFishAdmin.UserId, roleAppUser.RoleId, appFish.AppId),
-                (userEmployer.UserId, roleEmployer.RoleId, appAuth.AppId),
-                (userLaborer.UserId, roleLaborer.RoleId, appAuth.AppId),
-                (userPanchayat.UserId, rolePanchayat.RoleId, appAuth.AppId),
+                (userEmployer.UserId, roleJobCreator.RoleId, appGlam.AppId),
+                (userLaborer.UserId, roleLabourer.RoleId, appGlam.AppId),
+                (userPanchayat.UserId, rolePanchayat.RoleId, appGlam.AppId),
                 (userAdmin.UserId, roleAdmin.RoleId, appAuth.AppId),
             };
 
@@ -150,9 +150,9 @@ namespace RFE.Auth.API.Models
             var appPerms = new[] {
                 (userSystemAdmin.UserId, appAuth.AppId),
                 (userFishAdmin.UserId, appFish.AppId),
-                (userEmployer.UserId, appAuth.AppId),
-                (userLaborer.UserId, appAuth.AppId),
-                (userPanchayat.UserId, appAuth.AppId),
+                (userEmployer.UserId, appGlam.AppId),
+                (userLaborer.UserId, appGlam.AppId),
+                (userPanchayat.UserId, appGlam.AppId),
                 (userAdmin.UserId, appAuth.AppId),
             };
 

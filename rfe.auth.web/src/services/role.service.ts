@@ -60,9 +60,9 @@ const SEED: Role[] = [
   },
   // ── rfe-glam roles ───────────────────────────────────────────────────────────
   {
-    id: 'role-panchayatadmin-rfe-glam',
+    id: 'role-panchayatadmin-rfe-glam-app',
     name: 'PanchayatAdmin',
-    appId: 'rfe-glam',
+    appId: 'rfe-glam-app',
     color: 'cyan',
     description: 'Panchayat-level admin. Manages community data, approvals, and postings.',
     userCount: 8,
@@ -75,9 +75,9 @@ const SEED: Role[] = [
     ],
   },
   {
-    id: 'role-jobcreator-rfe-glam',
+    id: 'role-jobcreator-rfe-glam-app',
     name: 'JobCreator',
-    appId: 'rfe-glam',
+    appId: 'rfe-glam-app',
     color: 'indigo',
     description: 'App user. Can post job listings and hire labourers.',
     userCount: 52,
@@ -89,9 +89,9 @@ const SEED: Role[] = [
     ],
   },
   {
-    id: 'role-labourer-rfe-glam',
+    id: 'role-labourer-rfe-glam-app',
     name: 'Labourer',
-    appId: 'rfe-glam',
+    appId: 'rfe-glam-app',
     color: 'blue',
     description: 'App user. Can browse jobs and submit applications.',
     userCount: 340,
