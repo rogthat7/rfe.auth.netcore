@@ -8,6 +8,7 @@ import { Modal }  from '../../components/ui/Modal/Modal'
 import { Button } from '../../components/ui/Button/Button'
 import { applicationService } from '../../services/application.service'
 import { roleService }        from '../../services/role.service'
+import { userService }        from '../../services/user.service'
 import type { Application }   from '../../types/application.types'
 import type { Role }          from '../../types/role.types'
 import { toast } from 'sonner'
@@ -96,6 +97,9 @@ export default function Roles() {
   const [rolesLoading, setRolesLoading] = useState(false)
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null)
 
+  /* Users data state for dynamic counts */
+  const [users, setUsers] = useState<any[]>([])
+
   /* Modals */
   const [addRoleOpen, setAddRoleOpen]         = useState(false)
   const [addPermOpen, setAddPermOpen]         = useState(false)
@@ -129,6 +133,22 @@ export default function Roles() {
       .finally(() => setAppsLoading(false))
   }, [])
 
+  /* ── Load actual users to compute dynamic counts ── */
+  useEffect(() => {
+    userService.getUsers()
+      .then((res) => {
+        const rawUsers = res.data || []
+        const mapped = rawUsers.map((u: any) => ({
+          id: u.userId,
+          name: u.username || 'Unnamed User',
+          role: u.role || 'Labourer',
+          apps: u.apps ? u.apps.split(',') : ['rfe-auth'],
+        }))
+        setUsers(mapped)
+      })
+      .catch((err) => console.error('Failed to load users for counts:', err))
+  }, [])
+
   /* ── Load roles when app tab changes ── */
   useEffect(() => {
     if (!activeAppId) return
@@ -143,9 +163,29 @@ export default function Roles() {
       .finally(() => setRolesLoading(false))
   }, [activeAppId])
 
+  /* ── Compute roles with dynamic user counts ── */
+  const rolesWithUserCounts = useMemo(() => {
+    return roles.map((role) => {
+      const count = users.filter((u) => {
+        const userRole = u.role;
+        const targetRole = role.name;
+        const matchesRole =
+          userRole === targetRole ||
+          (userRole === 'Laborer' && targetRole === 'Labourer') ||
+          (userRole === 'Labourer' && targetRole === 'Laborer') ||
+          (userRole === 'Employer' && targetRole === 'JobCreator') ||
+          (userRole === 'JobCreator' && targetRole === 'Employer');
+
+        return matchesRole && u.apps.includes(activeAppId);
+      }).length
+
+      return { ...role, userCount: count }
+    })
+  }, [roles, users, activeAppId])
+
   const selectedRole = useMemo(
-    () => roles.find((r) => r.id === selectedRoleId) ?? null,
-    [roles, selectedRoleId]
+    () => rolesWithUserCounts.find((r) => r.id === selectedRoleId) ?? null,
+    [rolesWithUserCounts, selectedRoleId]
   )
 
   /* Group permissions by category */
@@ -318,7 +358,7 @@ export default function Roles() {
           ) : (
             <>
               <ul className={styles.roleList} role="listbox" aria-label="Roles">
-                {roles.map((role) => (
+                {rolesWithUserCounts.map((role) => (
                   <li
                     key={role.id}
                     id={`role-item-${role.id}`}

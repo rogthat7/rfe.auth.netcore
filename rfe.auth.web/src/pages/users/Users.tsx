@@ -1,35 +1,46 @@
 /* ─── Users Page ──────────────────────────────────────────────────────────── */
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Badge, roleToBadge } from '../../components/ui/Badge/Badge'
 import { useAppStore } from '../../store/app.store'
 import { getInitials, formatPhone, formatRelativeTime, formatRole } from '../../utils/formatters'
 import { userService } from '../../services/user.service'
+import { applicationService } from '../../services/application.service'
 import type { User } from '../../types/user.types'
+import type { Application } from '../../types/application.types'
 import styles from './Users.module.css'
 
 const APP_BADGE_COLORS: Record<string, 'blue'|'orange'|'grey'|'cyan'> = {
-  'rfe-auth':   'blue',
-  'rfe-admin':  'orange',
-  'rfe-portal': 'cyan',
+  'rfe-auth':     'blue',
+  'rfe-admin':    'orange',
+  'rfe-portal':   'cyan',
+  'rfe-glam-app': 'cyan',
+  'rfe-glam':     'cyan',
+  'fish-tracker': 'grey',
 }
-
-const APP_IDS = ['rfe-auth', 'rfe-admin', 'rfe-portal'] as const
 
 export default function Users() {
   const selectedAppId = useAppStore((s: { selectedAppId: string }) => s.selectedAppId)
   const setApp        = useAppStore((s: { setSelectedApp: (id: string) => void }) => s.setSelectedApp)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const activeAppFilter = searchParams.get('app') || 'all'
 
   const [users, setUsers] = useState<User[]>([])
+  const [apps, setApps] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
     setLoading(true)
-    userService.getUsers()
-      .then((res) => {
+
+    Promise.all([
+      userService.getUsers(),
+      applicationService.getApplications()
+    ])
+      .then(([userRes, appData]) => {
         if (active) {
-          const rawUsers = res.data || []
+          const rawUsers = userRes.data || []
           const mapped: User[] = rawUsers.map((u: any) => {
             const appsArray = u.apps ? u.apps.split(',') : ['rfe-auth']
             return {
@@ -44,13 +55,14 @@ export default function Users() {
             }
           })
           setUsers(mapped)
+          setApps(appData)
           setError(null)
         }
       })
       .catch((err) => {
         if (active) {
-          console.error('Failed to fetch users:', err)
-          setError('Failed to load users from the server.')
+          console.error('Failed to fetch users or apps:', err)
+          setError('Failed to load users and applications from the server.')
         }
       })
       .finally(() => {
@@ -63,7 +75,9 @@ export default function Users() {
     }
   }, [])
 
-  const filtered = users.filter((u) => u.apps.includes(selectedAppId))
+  const filtered = activeAppFilter === 'all'
+    ? users
+    : users.filter((u) => u.apps.includes(activeAppFilter))
 
   if (loading) {
     return <div className={styles.loading}>Loading users...</div>
@@ -79,17 +93,37 @@ export default function Users() {
       <div className={styles.banner}>
         <div className={styles.bannerLeft}>
           <span className={styles.bannerDot} />
-          <strong className={styles.bannerApp}>{selectedAppId}</strong>
-          <span className={styles.bannerCount}>{filtered.length.toLocaleString()} users</span>
+          {activeAppFilter === 'all' ? (
+            <>
+              <strong className={styles.bannerApp}>All Registered Users</strong>
+              <span className={styles.bannerCount}>{filtered.length.toLocaleString()} users total</span>
+            </>
+          ) : (
+            <>
+              <strong className={styles.bannerApp}>
+                {apps.find((a) => a.appId === activeAppFilter)?.displayName || activeAppFilter}
+              </strong>
+              <span className={styles.bannerCount}>{filtered.length.toLocaleString()} users</span>
+            </>
+          )}
         </div>
         <div className={styles.bannerSwitcher}>
-          {APP_IDS.map((id) => (
+          <button
+            className={[styles.switchBtn, activeAppFilter === 'all' ? styles.switchActive : ''].join(' ')}
+            onClick={() => setSearchParams({ app: 'all' })}
+          >
+            All
+          </button>
+          {apps.map((app) => (
             <button
-              key={id}
-              className={[styles.switchBtn, id === selectedAppId ? styles.switchActive : ''].join(' ')}
-              onClick={() => setApp(id)}
+              key={app.appId}
+              className={[styles.switchBtn, activeAppFilter === app.appId ? styles.switchActive : ''].join(' ')}
+              onClick={() => {
+                setSearchParams({ app: app.appId })
+                setApp(app.appId)
+              }}
             >
-              {id}
+              {app.displayName || app.appId}
             </button>
           ))}
         </div>

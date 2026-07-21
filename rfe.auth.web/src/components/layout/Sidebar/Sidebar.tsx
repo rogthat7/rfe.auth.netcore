@@ -2,7 +2,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   LayoutDashboard, AppWindow, BarChart3,
-  Users, Layers, Shield, Activity, ScrollText, Settings,
+  Users, Shield, Activity, ScrollText, Settings,
   LogOut,
 } from 'lucide-react'
 import { useAuthStore } from '@store/auth.store'
@@ -19,7 +19,6 @@ const OVERVIEW: NavItem[] = [
 ]
 const USER_MGMT: NavItem[] = [
   { label: 'All Users',       to: '/users',    icon: <Users size={17} /> },
-  { label: 'By Application',  to: '/users?view=by-app', icon: <Layers size={17} /> },
 ]
 const SYSTEM: NavItem[] = [
   { label: 'Roles & Permissions', to: '/roles',    icon: <Shield size={17} /> },
