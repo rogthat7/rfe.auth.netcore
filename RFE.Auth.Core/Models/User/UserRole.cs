@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -7,12 +8,11 @@ namespace RFE.Auth.Core.Models.User
     public class UserRole
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int UserRoleId { get; set; }
+        public Guid UserRoleId { get; set; }
         [ForeignKey("UserId")]
         public AuthUser AuthUser { get; set; }
-        public int UserId { get; set; }
-        public int RoleId { get; set; }
-        public int AppId { get; set; }
+        public Guid UserId { get; set; }
+        public Guid RoleId { get; set; }
+        public Guid AppId { get; set; }
     }
 }

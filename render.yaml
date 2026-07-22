@@ -1,0 +1,32 @@
+services:
+  # 1. RFE Auth API Web Service
+  - type: web
+    name: rfe-auth-api
+    env: docker
+    dockerContext: .
+    dockerfilePath: Dockerfile
+    plan: free
+    region: singapore
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:5001
+      - key: PORT
+        value: 5001
+      - key: ConnectionStrings__DefaultConection
+        value: Host=aws-0-ap-southeast-1.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.iiqyxhlmyogpiuknpcrm;Password=Regor@8806329362;SSL Mode=Require;Trust Server Certificate=true
+      - key: CommunicationServiceConfiguration__BaseUrl
+        value: https://rfe-comm-api.onrender.com
+
+  # 2. RFE Auth Web Frontend (React/Vite)
+  - type: web
+    name: rfe-auth-web
+    env: docker
+    dockerContext: ./rfe.auth.web
+    dockerfilePath: ./rfe.auth.web/Dockerfile.render
+    plan: free
+    region: singapore
+    envVars:
+      - key: PORT
+        value: 8080

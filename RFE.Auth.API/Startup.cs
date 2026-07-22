@@ -1,13 +1,20 @@
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
+using OpenIddict.Abstractions;
+using OpenIddict.Validation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using RFE.Auth.API.Helpers;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
@@ -18,9 +25,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Scalar.AspNetCore;
 using Newtonsoft.Json;
-using RFE.Auth.API.Helpers;
-using RFE.Auth.API.Heplers;
 using RFE.Auth.API.Models;
 using RFE.Auth.API.Models.User;
 using RFE.Auth.Core.Interfaces.Repositories;
@@ -66,115 +72,36 @@ namespace RFE.Auth.API
         /// <param name="services"></param>
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddControllers()
+                    .AddNewtonsoftJson();
+
             services.AddLogging();
-            services.Configure<CustomOptions>(Configuration.GetSection("CustomOptions"));
-            services.Configure<JwtOptions>(Configuration.GetSection("JwtConfig"));
-            services.Configure<ApiInfo>(Configuration.GetSection("ApiInfo"));
 
-            // This method gets called by the runtime. Use this method to add services to the container.
-            services.AddMvc(options => {
-                options.EnableEndpointRouting = false;
-            });
-            // services.AddApiVersioning(options =>
-            // {
-            //     options.ReportApiVersions = true;
-            //     options.AssumeDefaultVersionWhenUnspecified = true;
-            // });
-
-            // services.AddSingleton<IConfigureOptions<ApiVersioningOptions>, ConfigureApiVersioningOptions>();
-
-
-            #region  JwtAuth Configuration
-            services.AddAuthentication(x =>
+            services.Configure<ForwardedHeadersOptions>(options =>
             {
-                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                x.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(x => {
-                x.RequireHttpsMetadata = false;
-                x.SaveToken  = true;
-                x.TokenValidationParameters = new TokenValidationParameters {
-                    ValidateIssuerSigningKey  = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Configuration.GetValue<string>("JwtConfig:Secret"))),
-                    ValidateIssuer = false, // doubtful this should be false
-                    ValidateAudience = false, // doubtful this should be false
-                    RequireExpirationTime = false,
-                    ValidateLifetime = true,
-                    ValidIssuer =  Configuration["JwtConfig:Issuer"]
-                };
+                options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+                options.KnownIPNetworks.Clear();
+                options.KnownProxies.Clear();
             });
-            
 
-            services.AddSwaggerGen(swagger =>
+            services.AddCors(options =>
             {
-                swagger.SwaggerDoc("v1", new OpenApiInfo
+                options.AddPolicy("AllowAll", builder =>
                 {
-                    Version = "V1",
-                    Title = "rfe.auth.api",
-                    Description="ASP.NET Core 3.1 Web API" 
+                    builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader();
                 });
-                    // To Enable authorization using Swagger (JWT)  
-                swagger.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()  
-                {  
-                    Name = "Authorization",  
-                    Type = SecuritySchemeType.Http,  
-                    Scheme = "Bearer",  
-                    BearerFormat = "JWT",  
-                    In = ParameterLocation.Header, 
-                    Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n Enter 'Bearer' [space] and then your token in the text input below.\r\n\r\nExample: \"JWT Token\"",  
-                }); 
-                swagger.AddSecurityRequirement(new OpenApiSecurityRequirement  
-                {  
-                    {  
-                          new OpenApiSecurityScheme  
-                            {  
-                                Reference = new OpenApiReference  
-                                {  
-                                    Type = ReferenceType.SecurityScheme,  
-                                    Id = "Bearer"  
-                                }  
-                            },  
-                            new string[] {}  
-  
-                    }  
-                });   
-            });
-            #endregion
-            services.AddScoped<IUnitOfWork, UnitOfWork>(serviceProvider =>
-            {
-                var connectionString = Configuration.GetConnectionString("DefaultConection");
-                return new UnitOfWork(connectionString);
             });
 
-            #region Test Email Set Up
-            var emailConfig = Configuration
-                .GetSection("EmailConfiguration")
-                .Get<EmailConfiguration>();
-            services.AddSingleton(emailConfig);
-            #endregion
+            // Cleaned-up configuration using custom extension methods
+            services.AddCustomOptions(Configuration)
+                    .AddJwtAndGoogleAuthentication(Configuration)
+                    .AddOpenIddictServer()
+                    .AddSwaggerAndScalar(Assembly.GetExecutingAssembly().GetName().Name, AppContext.BaseDirectory)
+                    .AddAppServicesAndRepositories(Configuration);
 
-            #region  Add Services
-                services.AddScoped<IAuthService, AuthService>();
-                services.AddScoped<IUserService, UserService>();
-                services.AddScoped<IJwtAuthenticationService, JwtAuthenticationService>();
-                services.AddScoped<IEmailSender, EmailSender>();
-            #endregion
-
-            #region  Add Repositories
-                services.AddScoped<IUserRepository, UserRepository>();
-                services.AddScoped<IAuthRepository, AuthRepository>();
-            #endregion
-            
-            #region  SqlServer DBContext Section
-            
-            services.AddDbContext<DatabaseContext> (options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConection")));
-            
-            #endregion
-
-            // Auto Mapper Configurations
             services.AddAutoMapper(ProjectAssemblies);
-            services.AddControllers().AddNewtonsoftJson();
         }
         /// <summary>
         /// // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -184,6 +111,8 @@ namespace RFE.Auth.API
         /// <param name="logger"></param>
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger, IOptions<ApiInfo> _apiInfo)
         {
+            app.UseForwardedHeaders();
+
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
@@ -195,11 +124,9 @@ namespace RFE.Auth.API
             //app.UseHttpsRedirection();
 
             app.UseRouting();
-            app.UseCors();
+            app.UseCors("AllowAll");
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseMvc();
-
             app.UseSwagger();    
             app.UseSwaggerUI(c =>    
             {    
@@ -208,6 +135,23 @@ namespace RFE.Auth.API
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapScalarApiReference(options =>
+                {
+                    options.WithOpenApiRoutePattern("/swagger/v1/swagger.json");
+                    try
+                    {
+                        var scalarAuthHtmlPath = Path.Combine(AppContext.BaseDirectory, "Resources", "scalar-auth.html");
+                        if (File.Exists(scalarAuthHtmlPath))
+                        {
+                            var customAuthHtml = File.ReadAllText(scalarAuthHtmlPath);
+                            options.AddHeaderContent(customAuthHtml);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // Graceful fallback to avoid crashing startup
+                    }
+                });
                 endpoints.MapGet("/", async context => {
                    await context.Response.WriteAsync(JsonConvert.SerializeObject(new ApiInfo{
                         apiName = _apiInfo.Value.apiName,

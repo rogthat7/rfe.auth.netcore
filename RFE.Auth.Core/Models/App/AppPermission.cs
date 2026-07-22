@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
@@ -10,8 +11,7 @@ namespace RFE.Auth.Core.Models.App
     public class AppPermission
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int PermissionId { get; set; }
+        public Guid PermissionId { get; set; }
         [Required]
         public string PermissionName { get; set; }
         [Required]

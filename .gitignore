@@ -1,2 +1,19 @@
-bin
-obj
+bin/
+obj/
+.vs/
+
+# ==========================================
+# Agentic & Customizations (Antigravity/Claude Code)
+# ==========================================
+.agents/
+.claude/
+.claude-flow/
+skills/
+agents/
+*.log
+
+# ==========================================
+# Local Development Scripts & Configs
+# ==========================================
+cleanup-db.ps1
+.env

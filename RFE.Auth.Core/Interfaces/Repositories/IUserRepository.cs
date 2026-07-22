@@ -12,14 +12,15 @@ namespace RFE.Auth.Core.Interfaces.Repositories
     {
 
         Task<List<AuthUserByIdGetResponse>> All();
-        Task<AuthUserByIdGetResponse> GetById(int? id);
+        Task<AuthUserByIdGetResponse> GetById(System.Guid? id);
         /// <summary>
         /// Adds new unconfirmed user to the Unconfirmed List
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        Task AddNewAuthUser(AuthUser entity);
-        Task<bool> DeleteById(int? id);
+        Task AddNewAuthUser(AuthUser entity, string roleName, string appName = "rfe-auth");
+        Task MarkUserAsVerified(string username);
+        Task<bool> DeleteById(System.Guid? id);
         Task<bool> Upsert(AuthUser entity);
     }
 }

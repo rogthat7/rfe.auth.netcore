@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using RFE.Auth.Core.Models.App;
@@ -8,15 +9,14 @@ namespace RFE.Auth.Core.Models.User
     public class UserAppPermission
     {
         [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int UAPId { get; set; } 
-        public int UserId { get; set; } 
+        public Guid UAPId { get; set; } 
+        public Guid UserId { get; set; } 
         [ForeignKey("UserId")]
         public AuthUser AuthUser { get; set; }
-        public int AppId { get; set; } 
+        public Guid AppId { get; set; } 
         [ForeignKey("AppId")]
         public Application Application { get; set; }
-        public int PermissionId { get; set; } 
+        public Guid PermissionId { get; set; } 
         [ForeignKey("PermissionId")]
         public AppPermission AppPermission { get; set; }
     }

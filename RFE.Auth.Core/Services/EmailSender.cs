@@ -1,139 +1,242 @@
 using System;
-using System.IdentityModel.Tokens.Jwt;
+using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
-using System.Security.Authentication;
-using System.Security.Claims;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
-using MailKit.Net.Smtp;
-using MailKit.Security;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
-using MimeKit;
-using MimeKit.Utils;
 using Newtonsoft.Json;
 using RFE.Auth.Core.Interfaces.Services;
-using RFE.Auth.Core.Models.Email;
 using RFE.Auth.Core.Models.Shared;
 using RFE.Auth.Core.Models.User;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
 
 namespace RFE.Auth.Core.Services
 {
     public class EmailSender : IEmailSender
     {
-        private readonly EmailConfiguration _emailConfig;
+        private readonly CommunicationServiceConfiguration _commConfig;
+        private readonly IHttpClientFactory _httpClientFactory;
         private readonly IOptions<JwtOptions> _jwtOptions;
         private readonly ILogger<EmailSender> _logger;
-        private readonly string DEFAULT_USER_CONFIRMATION_SUBJECT = "DEFAULT_USER_CONFIRMATION_SUBJECT";
+        private readonly string DEFAULT_USER_CONFIRMATION_SUBJECT = "User Registration Confirmation";
 
-        public EmailSender(EmailConfiguration emailConfig, ILogger<EmailSender> logger, IOptions<JwtOptions> jwtOptions)
+        public EmailSender(
+            IOptions<CommunicationServiceConfiguration> commConfig, 
+            IHttpClientFactory httpClientFactory, 
+            ILogger<EmailSender> logger, 
+            IOptions<JwtOptions> jwtOptions)
         {
-            _emailConfig = emailConfig ?? throw new ArgumentNullException(nameof(emailConfig));
+            _commConfig = commConfig?.Value ?? throw new ArgumentNullException(nameof(commConfig));
+            _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
             _jwtOptions = jwtOptions ?? throw new ArgumentNullException(nameof(jwtOptions));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        private async Task<bool> Send(MimeMessage emailMessage)
+        public async Task<bool> SendUserConfirmationEmail(AuthUser authUser, string role = "appUser", string appId = "rfe-auth")
         {
-            bool emailSent = true; 
-            using (var client = new SmtpClient())
+            try
             {
-                 try
-                 {
-                     // Allow SSLv3.0 and all versions of TLS
-                    client.SslProtocols = SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13;
-                    // client.CheckCertificateRevocation  = false;
-                    await client.ConnectAsync(_emailConfig.SmtpServer, _emailConfig.Port, false);
-                    client.AuthenticationMechanisms.Remove("XOAUTH2");
-                    await client.AuthenticateAsync(_emailConfig.UserName, _emailConfig.Password);
-                    
-                    await client.SendAsync(emailMessage);
-                 }
-                 catch(Exception e){
-                     emailSent = false;
-                     _logger.LogError(e.Message);
-                 }
-                 finally
-                 {
-                    await client.DisconnectAsync(quit:true);
-                    client.Dispose();
-                 }
-                 return emailSent;
+                var htmlBody = await GetEmailBody(authUser, role, appId);
+                var baseDir = AppContext.BaseDirectory;
+                var inlineAttachments = new List<InlineAttachmentDto>();
+
+                // List of inline images to attach
+                var imageFiles = new[] { "image-1.png", "image-2.png", "image-3.png", "image-4.png", "image-5.png", "image-6.png" };
+                var cidMap = new Dictionary<string, string>();
+
+                foreach (var img in imageFiles)
+                {
+                    var imgPath = Path.Combine(baseDir, "Resources", "images", img);
+                    if (File.Exists(imgPath))
+                    {
+                        var contentId = Guid.NewGuid().ToString("N");
+                        var base64 = Convert.ToBase64String(await File.ReadAllBytesAsync(imgPath));
+                        
+                        inlineAttachments.Add(new InlineAttachmentDto
+                        {
+                            ContentId = contentId,
+                            FileName = img,
+                            ContentBase64 = base64,
+                            ContentType = "image/png"
+                        });
+
+                        cidMap.Add(img, contentId);
+                    }
+                }
+
+                // Replace references to images/image-X.png with cid:ContentId
+                foreach (var pair in cidMap)
+                {
+                    htmlBody = htmlBody.Replace($"images/{pair.Key}", $"cid:{pair.Value}");
+                }
+
+                var branding = GetAppBranding(appId);
+                var subject = $"Confirm your {branding.DisplayName} account";
+
+                var request = new SendEmailRequest
+                {
+                    To = new List<string> { authUser.Email },
+                    Subject = subject,
+                    Body = htmlBody,
+                    InlineAttachments = htmlBody.Contains("cid:") ? inlineAttachments : new List<InlineAttachmentDto>()
+                };
+
+                return await SendEmailApiAsync(request);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred preparing user confirmation email for {Email}", authUser.Email);
+                return false;
             }
         }
 
-        private MimeMessage CreateEmailMessage(Message message)
+        public async Task<bool> SendGeneralEmail(string to, string subject, string body)
         {
-            var emailMessage = new MimeMessage();
-            emailMessage.From.Add(new MailboxAddress(_emailConfig.From));
-            emailMessage.To.AddRange(message.To);
-            emailMessage.Subject = message.Subject;
-            emailMessage.Body = new TextPart(MimeKit.Text.TextFormat.Html) {Text = message.Content};
-            return emailMessage;
+            var primaryTo = ExtractFirstRecipient(to);
+            var request = new SendEmailRequest
+            {
+                To = new List<string> { primaryTo },
+                Subject = subject,
+                Body = body
+            };
+
+            return await SendEmailApiAsync(request);
         }
 
-        public async Task<bool> SendUserConfirmationEmail(AuthUser authUser)
+        private static string ExtractFirstRecipient(string input)
         {
-            var emailMessage = await  GetUserConfirmationEmailMessage(authUser);
-            return await Send(emailMessage);
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            char[] delimiters = new[] { ';', ',', '\r', '\n', '\t', ' ' };
+            var parts = input.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+            return parts.Length > 0 ? parts[0].Trim() : string.Empty;
         }
 
-        public async Task<MimeMessage> GetUserConfirmationEmailMessage(AuthUser authUser)
+        private async Task<bool> SendEmailApiAsync(SendEmailRequest request)
         {
-            var key = _jwtOptions.Value.JwtKeyForEmail;
-            var htmlBody = await GetEmailBody(authUser);
-            var builder = new BodyBuilder();
-            #region Processing Images ToDo
-            var image1 = builder.LinkedResources.Add ("Resources/images/image-1.png");
-            var image2 = builder.LinkedResources.Add ("Resources/images/image-2.png");
-            var image3 = builder.LinkedResources.Add ("Resources/images/image-3.png");
-            var image4 = builder.LinkedResources.Add ("Resources/images/image-4.png");
-            var image5 = builder.LinkedResources.Add ("Resources/images/image-5.png");
-            var image6 = builder.LinkedResources.Add ("Resources/images/image-6.png");
+            try
+            {
+                var client = _httpClientFactory.CreateClient("CommunicationService");
+                var url = $"{_commConfig.BaseUrl.TrimEnd('/')}/api/comm/v1/Email/send";
+                
+                var json = JsonConvert.SerializeObject(request);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            image1.ContentId = MimeUtils.GenerateMessageId ();
-            image2.ContentId = MimeUtils.GenerateMessageId ();
-            image3.ContentId = MimeUtils.GenerateMessageId ();
-            image4.ContentId = MimeUtils.GenerateMessageId ();
-            image5.ContentId = MimeUtils.GenerateMessageId ();
-            image6.ContentId = MimeUtils.GenerateMessageId ();
-            htmlBody = htmlBody.Replace("images/image-1.png",$"\"cid: {image1.ContentId}\"");
-            htmlBody = htmlBody.Replace("images/image-2.png",$"\"cid: {image2.ContentId}\"");
-            htmlBody = htmlBody.Replace("images/image-3.png",$"\"cid: {image3.ContentId}\"");
-            htmlBody = htmlBody.Replace("images/image-4.png",$"\"cid: {image4.ContentId}\"");
-            htmlBody = htmlBody.Replace("images/image-5.png",$"\"cid: {image5.ContentId}\"");
-            htmlBody = htmlBody.Replace("images/image-6.png",$"\"cid: {image6.ContentId}\"");
-            #endregion
-            builder.HtmlBody = htmlBody; 
-            Message message = new Message(new string[] {authUser.Email}, DEFAULT_USER_CONFIRMATION_SUBJECT, builder.HtmlBody ); 
-            var emailMessage = CreateEmailMessage(message);
-            return emailMessage;
+                var response = await client.PostAsync(url, content);
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("Email sent successfully via Communication Service.");
+                    return true;
+                }
+
+                var responseBody = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Communication API returned error: {StatusCode} - {Body}", (int)response.StatusCode, responseBody);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error calling Communication Service email endpoint.");
+                return false;
+            }
         }
 
-        private async Task<string> GetEmailBody(AuthUser authUser)
+        private async Task<string> GetEmailBody(AuthUser authUser, string role, string appId)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_jwtOptions.Value.JwtKeyForEmail));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256Signature);
 
             var claims = new[] {
-                new Claim("payload",JsonConvert.SerializeObject(authUser)),
-                
+                new Claim("payload", JsonConvert.SerializeObject(authUser)),
+                new Claim("role", role),
+                new Claim("app", appId)
             };
             var token = new JwtSecurityToken(
                 _jwtOptions.Value.Issuer,
                 null,
                 claims,
                 DateTime.UtcNow,
-                expires:DateTime.UtcNow.AddDays(1),// ToDo -- Change to 15 mins 
-                signingCredentials:credentials
+                expires: DateTime.UtcNow.AddDays(1),
+                signingCredentials: credentials
             );
             var jwtPayLoad = new JwtSecurityTokenHandler().WriteToken(token);
-            var strHtml = await File.ReadAllTextAsync("./Resources/email.html");
+            var baseDir = AppContext.BaseDirectory;
+            var strHtml = await File.ReadAllTextAsync(Path.Combine(baseDir, "Resources", "email.html"));
+            
+            var branding = GetAppBranding(appId);
+
             strHtml = strHtml.Replace("#username", authUser.Email);
-            strHtml = strHtml.Replace("#confirmationlink", $"https://localhost:5001/api/v1/user/confirmuserwithconfirmationlink?tokenPayload={jwtPayLoad}");
+            strHtml = strHtml.Replace("#confirmationlink", $"https://localhost:5001/api/auth/v1/User/confirmuserwithconfirmationlink?tokenPayload={jwtPayLoad}");
+            strHtml = strHtml.Replace("#appname", branding.DisplayName);
+            strHtml = strHtml.Replace("#apptagline", branding.Tagline);
+            strHtml = strHtml.Replace("#brandcolor", branding.BrandColor);
+            strHtml = strHtml.Replace("#accentcolor", branding.AccentColor);
+            strHtml = strHtml.Replace("#applink", branding.AppUrl);
+            strHtml = strHtml.Replace("#year", DateTime.UtcNow.Year.ToString());
+
             return strHtml;
+        }
+
+        private class AppBranding
+        {
+            public string DisplayName { get; set; } = string.Empty;
+            public string Tagline { get; set; } = string.Empty;
+            public string BrandColor { get; set; } = "#4f46e5";
+            public string AccentColor { get; set; } = "#e0e7ff";
+            public string AppUrl { get; set; } = "https://localhost:3000";
+        }
+
+        private AppBranding GetAppBranding(string appId)
+        {
+            return appId?.ToLowerInvariant() switch
+            {
+                "fish-tracker" or "fish-tracker-app" => new AppBranding
+                {
+                    DisplayName = "Fish Tracker",
+                    Tagline = "Track your catches and navigate the waters with ease.",
+                    BrandColor = "#0284c7",
+                    AccentColor = "#f0f9ff",
+                    AppUrl = "https://localhost:3002"
+                },
+                "rfe-glam-app" or "rfe-glam" => new AppBranding
+                {
+                    DisplayName = "RFE Glam",
+                    Tagline = "Connecting Panchayat administrations, local employers, and laborers.",
+                    BrandColor = "#059669",
+                    AccentColor = "#ecfdf5",
+                    AppUrl = "https://localhost:5173"
+                },
+                _ => new AppBranding
+                {
+                    DisplayName = "RFE Auth",
+                    Tagline = "Secure, unified authentication for the RFE ecosystem.",
+                    BrandColor = "#4f46e5",
+                    AccentColor = "#e0e7ff",
+                    AppUrl = "https://localhost:3001"
+                }
+            };
+        }
+
+        // Inner request contract DTOs matching the Communication API structure
+        private class SendEmailRequest
+        {
+            public List<string> To { get; set; } = new();
+            public string Subject { get; set; }
+            public string Body { get; set; }
+            public List<InlineAttachmentDto> InlineAttachments { get; set; } = new();
+        }
+
+        private class InlineAttachmentDto
+        {
+            public string ContentId { get; set; }
+            public string FileName { get; set; }
+            public string ContentBase64 { get; set; }
+            public string ContentType { get; set; }
         }
     }
 }

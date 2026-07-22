@@ -9,7 +9,8 @@ namespace RFE.Auth.Core.Interfaces.Repositories
     {
         
         Task<AuthUser> AuthenticateAuthUser(string username, string password);
-        Task<List<UserAppPermissionResponse>> GetUserAppPermissionsByUserId(int? userId);
+        Task<List<UserAppPermissionResponse>> GetUserAppPermissionsByUserId(System.Guid? userId);
+        Task<string?> GetUserRoleByUserId(System.Guid userId);
     }
 
 }

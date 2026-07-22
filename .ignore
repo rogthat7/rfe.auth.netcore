@@ -1,0 +1,9 @@
+# ==========================================
+# Agentic & Customizations (Antigravity/Claude Code)
+# ==========================================
+.agents/
+.claude/
+.claude-flow/
+skills/
+agents/
+*.log
