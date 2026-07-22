@@ -47,8 +47,9 @@ namespace RFE.Auth.Core.Services
                 throw new ArgumentNullException(nameof(phoneNumber));
             }
 
-            var cleanPhone = phoneNumber.Replace(" ", "").Replace("\t", "");
-            if (!cleanPhone.StartsWith("+") && cleanPhone != "Unknown")
+            var primaryPhone = ExtractFirstRecipient(phoneNumber);
+            var cleanPhone = primaryPhone.Replace(" ", "").Replace("\t", "");
+            if (!cleanPhone.StartsWith("+") && cleanPhone != "Unknown" && !string.IsNullOrEmpty(cleanPhone))
             {
                 cleanPhone = "+" + cleanPhone;
             }
@@ -83,6 +84,16 @@ namespace RFE.Auth.Core.Services
                 _logger.LogError(ex, "Unexpected error calling Communication Service SMS endpoint.");
                 return false;
             }
+        }
+
+        private static string ExtractFirstRecipient(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            char[] delimiters = new[] { ';', ',', '\r', '\n', '\t', ' ' };
+            var parts = input.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+            return parts.Length > 0 ? parts[0].Trim() : string.Empty;
         }
     }
 }

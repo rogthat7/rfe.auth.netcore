@@ -97,14 +97,25 @@ namespace RFE.Auth.Core.Services
 
         public async Task<bool> SendGeneralEmail(string to, string subject, string body)
         {
+            var primaryTo = ExtractFirstRecipient(to);
             var request = new SendEmailRequest
             {
-                To = new List<string> { to },
+                To = new List<string> { primaryTo },
                 Subject = subject,
                 Body = body
             };
 
             return await SendEmailApiAsync(request);
+        }
+
+        private static string ExtractFirstRecipient(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            char[] delimiters = new[] { ';', ',', '\r', '\n', '\t', ' ' };
+            var parts = input.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+            return parts.Length > 0 ? parts[0].Trim() : string.Empty;
         }
 
         private async Task<bool> SendEmailApiAsync(SendEmailRequest request)

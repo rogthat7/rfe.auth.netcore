@@ -850,15 +850,17 @@ namespace RFE.Auth.API.Controllers
             _logger.LogInformation("Password recovery requested. App: {AppName} ({DisplayName}), Method: {Method}, Identifier: {Identifier}", 
                 app.AppName, app.DisplayName, method, model.Identifier);
 
+            var rawIdentifier = ExtractFirstRecipient(model.Identifier);
+
             // Find user
             AuthUser user = null;
             if (method == "email")
             {
-                user = await _dbContext.AuthUsers.FirstOrDefaultAsync(u => u.Email == model.Identifier);
+                user = await _dbContext.AuthUsers.FirstOrDefaultAsync(u => u.Email == rawIdentifier);
             }
             else // phone
             {
-                if (long.TryParse(model.Identifier.Replace(" ", "").Replace("\t", ""), out long phoneLong))
+                if (long.TryParse(rawIdentifier.Replace(" ", "").Replace("\t", ""), out long phoneLong))
                 {
                     user = await _dbContext.AuthUsers.FirstOrDefaultAsync(u => u.Phone == phoneLong);
                 }
@@ -991,6 +993,16 @@ namespace RFE.Auth.API.Controllers
                 _logger.LogError(ex, "Error occurred during password reset.");
                 return StatusCode(500, new { success = false, message = "An error occurred while resetting your password." });
             }
+        }
+
+        private static string ExtractFirstRecipient(string input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            char[] delimiters = new[] { ';', ',', '\r', '\n', '\t', ' ' };
+            var parts = input.Split(delimiters, StringSplitOptions.RemoveEmptyEntries);
+            return parts.Length > 0 ? parts[0].Trim() : string.Empty;
         }
     }
 
