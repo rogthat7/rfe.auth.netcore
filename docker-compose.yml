@@ -27,6 +27,8 @@ services:
       - ConnectionStrings__DefaultConection=Host=rfe-auth-db;Port=5432;Database=rfe-auth;Username=postgres;Password=YourStrongPassword123!
       - PostgresDockerConfig__PostgresServer=rfe-auth-db
       - ASPNETCORE_URLS=https://+:5001
+      - ASPNETCORE_KESTREL__CERTIFICATES__DEFAULT__PATH=/certs/localhost+2.pem
+      - ASPNETCORE_KESTREL__CERTIFICATES__DEFAULT__KEYPATH=/certs/localhost+2-key.pem
       - CommunicationServiceConfiguration__BaseUrl=http://rfe-comm-api:5010
       - Authentication__Github__ClientId=${GITHUB_CLIENT_ID}
       - Authentication__Github__ClientSecret=${GITHUB_CLIENT_SECRET}
