@@ -1,0 +1,31 @@
+{
+  "name": "rfe-auth-mcp",
+  "title": "RFE Auth & Identity MCP Server",
+  "description": "Docker MCP Toolkit catalog server providing OAuth 2.1 identity and user management tools for LLMs.",
+  "version": "1.0.0",
+  "vendor": "RFE",
+  "icon": "https://raw.githubusercontent.com/docker/mcp/main/assets/icon.png",
+  "publisher": "rogthat7",
+  "repository": "https://github.com/rogthat7/rfe.auth.netcore",
+  "docker": {
+    "image": "rogthat7/rfe-auth-mcp:latest",
+    "ports": [
+      {
+        "container": 3000,
+        "description": "MCP Server SSE Endpoint"
+      }
+    ],
+    "environment": [
+      {
+        "name": "SCALAR_OPENAPI_URL",
+        "default": "http://rfe-auth-api:8080/swagger/v1/swagger.json",
+        "description": "Target OpenAPI spec URL"
+      }
+    ]
+  },
+  "tools": [
+    "summarize-openapi-specs",
+    "search-openapi-operations",
+    "execute-request"
+  ]
+}

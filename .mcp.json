@@ -1,5 +1,16 @@
 {
   "mcpServers": {
+    "rfe-auth-api": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx",
+        "-y",
+        "@scalar/mcp-server",
+        "--url",
+        "https://mcp.scalar.com/mcp/44bb19e4-ddef-4014-9f6e-bdb7515fad61"
+      ]
+    },
     "claude-flow": {
       "command": "cmd",
       "args": [
