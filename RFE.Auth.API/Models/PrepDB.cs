@@ -263,6 +263,44 @@ namespace RFE.Auth.API.Models
             {
                 await manager.UpdateAsync(glamApp, glamDescriptor);
             }
+
+            // Clean up old client ID if it exists
+            var oldAgentApp = await manager.FindByClientIdAsync("antigravity-agent");
+            if (oldAgentApp != null) { await manager.DeleteAsync(oldAgentApp); }
+
+            // Seed rfe-visualise (third-party client)
+            var visualiseApp = await manager.FindByClientIdAsync("rfe-visualise");
+            var visualiseDescriptor = new OpenIddict.Abstractions.OpenIddictApplicationDescriptor
+            {
+                ClientId = "rfe-visualise",
+                DisplayName = "RFE Visualise Super Memory",
+                ClientType = OpenIddict.Abstractions.OpenIddictConstants.ClientTypes.Public,
+                Permissions =
+                {
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Endpoints.Authorization,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Endpoints.Token,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.ResponseTypes.Code,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Scopes.Email,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Scopes.Profile,
+                    OpenIddict.Abstractions.OpenIddictConstants.Permissions.Prefixes.Scope + "openid"
+                },
+                RedirectUris =
+                {
+                    new Uri("http://localhost:3333/oauth-callback"),
+                    new Uri("http://127.0.0.1:3333/oauth-callback")
+                }
+            };
+
+            if (visualiseApp == null)
+            {
+                await manager.CreateAsync(visualiseDescriptor);
+            }
+            else
+            {
+                await manager.UpdateAsync(visualiseApp, visualiseDescriptor);
+            }
         }
     }
 }
