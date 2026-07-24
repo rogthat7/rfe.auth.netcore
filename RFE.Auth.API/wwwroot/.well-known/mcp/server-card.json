@@ -1,14 +1,29 @@
 {
   "$schema": "https://smithery.ai/schemas/server-card.json",
+  "name": "rogthat7/rfe-auth-api",
+  "displayName": "RFE Auth & Identity MCP Server",
+  "title": "RFE Auth & Identity MCP Server",
+  "version": "1.0.0",
+  "description": "Comprehensive OAuth 2.1 identity provider, OpenIddict token server, and PostgreSQL user administration backend.",
+  "homepage": "https://github.com/rogthat7/rfe.auth.netcore",
+  "homepageUrl": "https://github.com/rogthat7/rfe.auth.netcore",
+  "repository": "https://github.com/rogthat7/rfe.auth.netcore",
+  "repositoryUrl": "https://github.com/rogthat7/rfe.auth.netcore",
+  "icon": "https://rfe-auth-api.onrender.com/static/logo.png",
+  "iconUrl": "https://rfe-auth-api.onrender.com/static/logo.png",
   "serverInfo": {
     "name": "rogthat7/rfe-auth-api",
     "displayName": "RFE Auth & Identity MCP Server",
+    "title": "RFE Auth & Identity MCP Server",
     "version": "1.0.0",
-    "description": "OAuth 2.1 identity provider, OpenIddict token server, and PostgreSQL user administration tools for ASP.NET Core backend applications."
+    "description": "Comprehensive OAuth 2.1 identity provider, OpenIddict token server, and PostgreSQL user administration backend.",
+    "homepage": "https://github.com/rogthat7/rfe.auth.netcore",
+    "homepageUrl": "https://github.com/rogthat7/rfe.auth.netcore",
+    "repository": "https://github.com/rogthat7/rfe.auth.netcore",
+    "repositoryUrl": "https://github.com/rogthat7/rfe.auth.netcore",
+    "icon": "https://rfe-auth-api.onrender.com/static/logo.png",
+    "iconUrl": "https://rfe-auth-api.onrender.com/static/logo.png"
   },
-  "description": "Comprehensive OAuth 2.1 identity provider, OpenIddict token server, and PostgreSQL user administration backend.",
-  "homepage": "https://github.com/rogthat7/rfe.auth.netcore",
-  "iconUrl": "https://rfe-auth-api.onrender.com/static/logo.png",
   "authentication": {
     "required": false
   },

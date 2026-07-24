@@ -1,0 +1,27 @@
+# Smithery Manifest for RFE.Auth.Netcore MCP Server
+startCommand:
+  type: stdio
+  config:
+    command: "npx"
+    args:
+      - "-y"
+      - "@zerry_jin/swagger-mcp"
+      - "--url"
+      - "https://rfe-auth-api.onrender.com/swagger/v1/swagger.json"
+
+metadata:
+  name: "rogthat7/rfe-auth-api"
+  displayName: "RFE Auth & Identity MCP Server"
+  title: "RFE Auth & Identity MCP Server"
+  description: "OAuth 2.1 identity provider, OpenIddict token server, and PostgreSQL user administration backend."
+  homepage: "https://github.com/rogthat7/rfe.auth.netcore"
+  repository: "https://github.com/rogthat7/rfe.auth.netcore"
+  icon: "https://rfe-auth-api.onrender.com/static/logo.png"
+  iconUrl: "https://rfe-auth-api.onrender.com/static/logo.png"
+  license: "MIT"
+  tags:
+    - authentication
+    - oauth2
+    - openiddict
+    - scalar
+    - netcore
