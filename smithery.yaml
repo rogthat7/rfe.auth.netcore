@@ -4,16 +4,12 @@
 startCommand:
   type: stdio
   config:
-    command: "cmd"
+    command: "npx"
     args:
-      - "/c"
-      - "npx"
       - "-y"
-      - "@scalar/mcp-server"
+      - "@zerry_jin/swagger-mcp"
       - "--url"
       - "https://rfe-auth-api.onrender.com/swagger/v1/swagger.json"
-  env:
-    SCALAR_MCP_AUTO_SUMMARY: "true"
 
 metadata:
   name: "rogerferrnandes/rfe-auth-api"
