@@ -4,54 +4,110 @@
     "name": "rogthat7/rfe-auth-api",
     "displayName": "RFE Auth & Identity MCP Server",
     "version": "1.0.0",
-    "description": "OAuth 2.1 authentication, OpenIddict token manager, and PostgreSQL user administration tools."
+    "description": "OAuth 2.1 identity provider, OpenIddict token server, and PostgreSQL user administration tools for ASP.NET Core backend applications."
   },
+  "description": "Comprehensive OAuth 2.1 identity provider, OpenIddict token server, and PostgreSQL user administration backend.",
+  "homepage": "https://github.com/rogthat7/rfe.auth.netcore",
+  "iconUrl": "https://rfe-auth-api.onrender.com/static/logo.png",
   "authentication": {
     "required": false
   },
   "tools": [
     {
       "name": "summarize-openapi-specs",
-      "description": "Summarizes the OpenAPI spec operations for RFE Auth API.",
+      "description": "Summarizes all public OpenAPI endpoints and operations for RFE Auth API.",
+      "annotations": {
+        "title": "Summarize OpenAPI Specification",
+        "readOnlyHint": true,
+        "destructive": false
+      },
       "inputSchema": {
         "type": "object",
         "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "string",
+            "description": "Human-readable summary of API routes and capabilities"
+          },
+          "operationCount": {
+            "type": "integer",
+            "description": "Total number of available OpenAPI operations"
+          }
+        }
       }
     },
     {
       "name": "search-openapi-operations",
-      "description": "Searches OpenAPI endpoints by keyword or tag.",
+      "description": "Searches OpenAPI endpoints by keyword or controller tag.",
+      "annotations": {
+        "title": "Search Operations",
+        "readOnlyHint": true,
+        "destructive": false
+      },
       "inputSchema": {
         "type": "object",
         "properties": {
           "query": {
             "type": "string",
-            "description": "Search term"
+            "description": "Search keyword or endpoint path"
           }
         },
         "required": [
           "query"
         ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "matches": {
+            "type": "array",
+            "description": "List of matching OpenAPI endpoint operations",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
       }
     },
     {
       "name": "execute-request",
-      "description": "Executes an HTTP API call against RFE Auth backend.",
+      "description": "Executes an HTTP API call against RFE Auth backend endpoints.",
+      "annotations": {
+        "title": "Execute API Request",
+        "readOnlyHint": false,
+        "destructive": false
+      },
       "inputSchema": {
         "type": "object",
         "properties": {
           "operationId": {
             "type": "string",
-            "description": "OpenAPI Operation ID"
+            "description": "OpenAPI Operation ID to invoke"
           },
           "parameters": {
             "type": "object",
-            "description": "Parameters payload"
+            "description": "Parameters payload object for path, query, or body"
           }
         },
         "required": [
           "operationId"
         ]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "statusCode": {
+            "type": "integer",
+            "description": "HTTP response status code"
+          },
+          "data": {
+            "type": "object",
+            "description": "Response payload data object"
+          }
+        }
       }
     }
   ]
