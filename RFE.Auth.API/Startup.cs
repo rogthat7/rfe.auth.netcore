@@ -123,6 +123,7 @@ namespace RFE.Auth.API
             PrepDB.PrepPopulation(app);
             //app.UseHttpsRedirection();
 
+            app.UseDefaultFiles();
             app.UseStaticFiles();
 
             app.UseRouting();

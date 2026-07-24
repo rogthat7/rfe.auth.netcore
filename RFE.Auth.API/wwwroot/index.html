@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RFE Auth & Identity — OAuth 2.1 & Model Context Protocol (MCP) Infrastructure</title>
+  <meta name="description" content="High-security OAuth 2.1 identity provider, OpenIddict token server, and Model Context Protocol (MCP) server for modern AI agents and enterprise applications.">
+
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-base: #030712;
+      --bg-surface: #0b0f19;
+      --bg-card: rgba(17, 24, 39, 0.7);
+      --bg-card-hover: rgba(31, 41, 55, 0.8);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-highlight: rgba(99, 102, 241, 0.3);
+      --text-primary: #f9fafb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent-indigo: #6366f1;
+      --accent-indigo-hover: #4f46e5;
+      --accent-emerald: #10b981;
+      --accent-cyan: #06b6d4;
+      --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: var(--bg-base);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Ambient Gradient Mesh Background */
+    .ambient-mesh {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .ambient-glow-1 {
+      position: absolute;
+      top: -20%;
+      left: 30%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0,0,0,0) 70%);
+      filter: blur(80px);
+    }
+
+    .ambient-glow-2 {
+      position: absolute;
+      top: 40%;
+      right: 10%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, rgba(0,0,0,0) 70%);
+      filter: blur(80px);
+    }
+
+    /* Layout Containers */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navigation Bar */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      background: rgba(3, 7, 18, 0.8);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 72px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 1.125rem;
+    }
+
+    .logo-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, var(--accent-indigo), var(--accent-cyan));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.1rem;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      list-style: none;
+    }
+
+    .nav-link {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      transition: color 160ms ease;
+    }
+
+    .nav-link:hover {
+      color: var(--text-primary);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: var(--radius-md);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: transform 160ms var(--ease-out), background-color 160ms ease, border-color 160ms ease;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background-color: var(--accent-indigo);
+      color: #ffffff;
+      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.25);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-indigo-hover);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-primary);
+      border-color: var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 96px 0 64px;
+      text-align: center;
+    }
+
+    .badge-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      color: var(--accent-emerald);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--accent-emerald);
+      box-shadow: 0 0 10px var(--accent-emerald);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .hero-title {
+      font-size: 3.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-subtitle {
+      font-size: 1.25rem;
+      color: var(--text-secondary);
+      max-width: 720px;
+      margin: 0 auto 40px;
+      font-weight: 400;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 64px;
+    }
+
+    /* Terminal Quick Copy Box */
+    .terminal-box {
+      max-width: 780px;
+      margin: 0 auto;
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      text-align: left;
+    }
+
+    .terminal-header {
+      background: #060911;
+      padding: 12px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .terminal-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+    .dot-red { background-color: #ef4444; }
+    .dot-yellow { background-color: #f59e0b; }
+    .dot-green { background-color: #10b981; }
+
+    .terminal-tabs {
+      display: flex;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.8125rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 160ms ease;
+    }
+
+    .tab-btn.active, .tab-btn:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .terminal-body {
+      padding: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      color: #e5e7eb;
+      position: relative;
+    }
+
+    .code-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .code-prompt {
+      color: var(--accent-emerald);
+      user-select: none;
+      margin-right: 12px;
+    }
+
+    .btn-copy {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 160ms var(--ease-out), background-color 160ms ease;
+    }
+
+    .btn-copy:active {
+      transform: scale(0.96);
+    }
+
+    .btn-copy:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    /* Features Grid */
+    .features-section {
+      padding: 96px 0;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .section-title {
+      font-size: 2.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+    }
+
+    .section-subtitle {
+      color: var(--text-secondary);
+      font-size: 1.0625rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      transition: transform 200ms var(--ease-out), border-color 200ms ease, background-color 200ms ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: var(--border-highlight);
+      background: var(--bg-card-hover);
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      color: var(--accent-indigo);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .card-desc {
+      color: var(--text-secondary);
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* Links & Badges Section */
+    .links-section {
+      padding: 64px 0 96px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .links-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+    .link-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 24px;
+      background: rgba(17, 24, 39, 0.5);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      color: var(--text-primary);
+      font-weight: 600;
+      transition: transform 160ms var(--ease-out), border-color 160ms ease;
+    }
+
+    .link-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-indigo);
+    }
+
+    .link-card-arrow {
+      color: var(--text-muted);
+      transition: transform 160ms ease, color 160ms ease;
+    }
+
+    .link-card:hover .link-card-arrow {
+      transform: translateX(4px);
+      color: var(--accent-indigo);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border-color);
+      padding: 48px 0;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Ambient Glow Effects -->
+  <div class="ambient-mesh">
+    <div class="ambient-glow-1"></div>
+    <div class="ambient-glow-2"></div>
+  </div>
+
+  <!-- Header / Navigation -->
+  <header>
+    <div class="container nav-inner">
+      <a href="/" class="logo">
+        <div class="logo-icon">R</div>
+        <span>RFE Auth & Identity</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="/scalar/v1" class="nav-link">Scalar Docs</a></li>
+        <li><a href="/swagger" class="nav-link">Swagger UI</a></li>
+        <li><a href="https://smithery.ai/servers/rogthat7/rfe-auth-api" target="_blank" rel="noopener" class="nav-link">Smithery Registry</a></li>
+        <li><a href="https://github.com/rogthat7/rfe.auth.netcore" target="_blank" rel="noopener" class="nav-link">GitHub</a></li>
+      </ul>
+
+      <a href="/scalar/v1" class="btn btn-primary">Explore API</a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main>
+    <section class="hero">
+      <div class="container">
+        <div class="badge-status">
+          <span class="status-dot"></span>
+          <span>MCP Active — Verified on Smithery Registry</span>
+        </div>
+
+        <h1 class="hero-title">Identity Infrastructure for Modern AI Agents & Web Apps</h1>
+
+        <p class="hero-subtitle">
+          High-security OAuth 2.1 authorization server powered by OpenIddict and PostgreSQL. Exposes native Model Context Protocol (MCP) tools for Claude, Cursor, and AI workflows.
+        </p>
+
+        <div class="hero-actions">
+          <a href="https://smithery.ai/servers/rogthat7/rfe-auth-api" target="_blank" rel="noopener" class="btn btn-primary">
+            <span>Install on Smithery</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="/scalar/v1" class="btn btn-secondary">Interactive API Docs</a>
+        </div>
+
+        <!-- Terminal Quick Copy Widget -->
+        <div class="terminal-box">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+            </div>
+            <div class="terminal-tabs">
+              <button class="tab-btn active" onclick="switchTab('smithery')">Smithery CLI</button>
+              <button class="tab-btn" onclick="switchTab('claude')">Claude Desktop</button>
+              <button class="tab-btn" onclick="switchTab('openapi')">OpenAPI URL</button>
+            </div>
+          </div>
+          <div class="terminal-body">
+            <div class="code-line" id="code-content">
+              <div>
+                <span class="code-prompt">$</span>
+                <span id="command-text">npx smithery@latest publish "https://rfe-auth-api.onrender.com" -n "rogthat7/rfe-auth-api"</span>
+              </div>
+              <button class="btn-copy" onclick="copyCommand()">Copy</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Grid -->
+    <section class="features-section">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Built for Production & Agentic AI</h2>
+          <p class="section-subtitle">Enterprise-grade security standards with frictionless developer experience.</p>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-icon">🔒</div>
+            <h3 class="card-title">OAuth 2.1 & PKCE</h3>
+            <p class="card-desc">Strict enforcement of Proof Key for Code Exchange (PKCE) for Single Page Applications (SPAs) and public clients. Zero client secret leaks.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon">⚡</div>
+            <h3 class="card-title">Model Context Protocol (MCP)</h3>
+            <p class="card-desc">Native Smithery registry integration. Exposes OpenAPI spec endpoints directly as tools to Claude Desktop, Cursor, and Agentic AI runners.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon">🔑</div>
+            <h3 class="card-title">OpenIddict Core</h3>
+            <p class="card-desc">Built on OpenIddict 7.5 for flexible token management, authorization code flows, refresh tokens, and federated Google/GitHub logins.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon">🔕</div>
+            <h3 class="card-title">First-Party Auto-Consent</h3>
+            <p class="card-desc">Instant seamless single sign-on (SSO) for internal applications, skipping consent popups while maintaining explicit consent for 3rd-party apps.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon">📊</div>
+            <h3 class="card-title">Scalar & OpenAPI Specs</h3>
+            <p class="card-desc">Beautiful, responsive API reference powered by Scalar at <code>/scalar/v1</code> and standard Swagger endpoints at <code>/swagger/v1/swagger.json</code>.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-icon">🐘</div>
+            <h3 class="card-title">PostgreSQL & Entity Framework</h3>
+            <p class="card-desc">High-performance database persistence with PostgreSQL schema isolation, indexed user application permissions, and role management.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Links Section -->
+    <section class="links-section">
+      <div class="container">
+        <div class="section-header">
+          <h2 class="section-title">Developer Quick Links</h2>
+        </div>
+
+        <div class="links-grid">
+          <a href="https://smithery.ai/servers/rogthat7/rfe-auth-api" target="_blank" rel="noopener" class="link-card">
+            <span>Smithery Registry</span>
+            <span class="link-card-arrow">→</span>
+          </a>
+          <a href="/.well-known/mcp/server-card.json" target="_blank" rel="noopener" class="link-card">
+            <span>MCP Server Card</span>
+            <span class="link-card-arrow">→</span>
+          </a>
+          <a href="/swagger/v1/swagger.json" target="_blank" rel="noopener" class="link-card">
+            <span>OpenAPI v1 Spec</span>
+            <span class="link-card-arrow">→</span>
+          </a>
+          <a href="/scalar/v1" class="link-card">
+            <span>Scalar API Explorer</span>
+            <span class="link-card-arrow">→</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-inner">
+      <p>© 2026 RFE Auth & Identity Service. Open-source under MIT License.</p>
+      <p>Deployed on Render • Powered by .NET 10.0 & OpenIddict</p>
+    </div>
+  </footer>
+
+  <script>
+    const commands = {
+      smithery: 'npx smithery@latest publish "https://rfe-auth-api.onrender.com" -n "rogthat7/rfe-auth-api"',
+      claude: '"rfe-auth-api": { "command": "npx", "args": ["-y", "@zerry_jin/swagger-mcp", "--url", "https://rfe-auth-api.onrender.com/swagger/v1/swagger.json"] }',
+      openapi: 'https://rfe-auth-api.onrender.com/swagger/v1/swagger.json'
+    };
+
+    let activeTab = 'smithery';
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('command-text').innerText = commands[tab];
+    }
+
+    function copyCommand() {
+      const text = commands[activeTab];
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('.btn-copy');
+        btn.innerText = 'Copied!';
+        setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
