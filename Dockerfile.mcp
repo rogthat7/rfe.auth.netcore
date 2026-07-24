@@ -1,0 +1,12 @@
+FROM node:22-alpine
+
+WORKDIR /app
+
+# Install Scalar MCP server runner
+RUN npm install -g @scalar/mcp-server
+
+ENV SCALAR_OPENAPI_URL="http://rfe-auth-api:8080/swagger/v1/swagger.json"
+
+EXPOSE 3000
+
+CMD ["npx", "@scalar/mcp-server", "--url", "http://rfe-auth-api:8080/swagger/v1/swagger.json", "--port", "3000", "--sse"]

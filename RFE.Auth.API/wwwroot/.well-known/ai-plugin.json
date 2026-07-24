@@ -1,0 +1,24 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "RFE Auth Service",
+  "name_for_model": "rfe_auth_service",
+  "description_for_human": "OAuth 2.1 Identity Provider and User Management Service.",
+  "description_for_model": "MCP and API tool for authenticating users, managing user accounts, executing PKCE token exchanges, and inspecting OAuth identity states.",
+  "auth": {
+    "type": "oauth",
+    "client_url": "https://auth.yourdomain.com/connect/authorize",
+    "scope": "openid profile email offline_access",
+    "authorization_url": "https://auth.yourdomain.com/connect/token",
+    "authorization_content_type": "application/x-www-form-urlencoded",
+    "verification_tokens": {
+      "openai": "YOUR_OPENAI_VERIFICATION_TOKEN_HERE"
+    }
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://auth.yourdomain.com/swagger/v1/swagger.json"
+  },
+  "logo_url": "https://auth.yourdomain.com/static/logo.png",
+  "contact_email": "admin@yourdomain.com",
+  "legal_info_url": "https://auth.yourdomain.com/privacy"
+}
