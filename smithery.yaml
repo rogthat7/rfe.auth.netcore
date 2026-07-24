@@ -12,7 +12,7 @@ startCommand:
       - "https://rfe-auth-api.onrender.com/swagger/v1/swagger.json"
 
 metadata:
-  name: "rogerferrnandes/rfe-auth-api"
+  name: "rogthat7/rfe-auth-api"
   displayName: "RFE Auth & Identity MCP Server"
   description: "OAuth 2.1 authentication, OpenIddict token manager, and PostgreSQL user administration tools."
   icon: "https://rfe-auth-api.onrender.com/static/logo.png"

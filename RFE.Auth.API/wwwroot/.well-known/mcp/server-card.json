@@ -1,7 +1,7 @@
 {
   "$schema": "https://smithery.ai/schemas/server-card.json",
   "serverInfo": {
-    "name": "rogerferrnandes/rfe-auth-api",
+    "name": "rogthat7/rfe-auth-api",
     "displayName": "RFE Auth & Identity MCP Server",
     "version": "1.0.0",
     "description": "OAuth 2.1 authentication, OpenIddict token manager, and PostgreSQL user administration tools."
