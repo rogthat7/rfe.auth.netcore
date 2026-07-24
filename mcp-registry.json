@@ -1,0 +1,39 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/registry/main/schema.json",
+  "name": "rfe-auth-api",
+  "displayName": "RFE Auth & Identity Service",
+  "description": "Model Context Protocol server for OAuth 2.1 authentication, user identity management, and PKCE token handling backed by PostgreSQL and OpenIddict.",
+  "vendor": {
+    "name": "RFE",
+    "url": "https://github.com/rogthat7/rfe.auth.netcore"
+  },
+  "version": "1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rogthat7/rfe.auth.netcore.git"
+  },
+  "capabilities": {
+    "tools": [
+      {
+        "name": "summarize-openapi-specs",
+        "description": "Returns a summary of available authentication and user management endpoints."
+      },
+      {
+        "name": "search-openapi-operations",
+        "description": "Search OpenAPI endpoints by path, tag, or HTTP method."
+      },
+      {
+        "name": "execute-request",
+        "description": "Execute HTTP requests against the RFE Auth API endpoints."
+      }
+    ]
+  },
+  "installation": {
+    "type": "npx",
+    "package": "@scalar/mcp-server",
+    "args": [
+      "--url",
+      "https://auth.yourdomain.com/swagger/v1/swagger.json"
+    ]
+  }
+}
