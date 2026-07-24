@@ -1,6 +1,4 @@
 # Smithery Manifest for RFE.Auth.Netcore MCP Server
-# Registry details: https://smithery.ai/
-
 startCommand:
   type: stdio
   config:
@@ -14,10 +12,12 @@ startCommand:
 metadata:
   name: "rogthat7/rfe-auth-api"
   displayName: "RFE Auth & Identity MCP Server"
+  title: "RFE Auth & Identity MCP Server"
   description: "OAuth 2.1 identity provider, OpenIddict token server, and PostgreSQL user administration backend."
   homepage: "https://github.com/rogthat7/rfe.auth.netcore"
-  icon: "https://rfe-auth-api.onrender.com/static/logo.png"
   repository: "https://github.com/rogthat7/rfe.auth.netcore"
+  icon: "https://rfe-auth-api.onrender.com/static/logo.png"
+  iconUrl: "https://rfe-auth-api.onrender.com/static/logo.png"
   license: "MIT"
   tags:
     - authentication
