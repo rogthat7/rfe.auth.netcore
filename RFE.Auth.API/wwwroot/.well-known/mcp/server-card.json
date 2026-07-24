@@ -1,0 +1,58 @@
+{
+  "$schema": "https://smithery.ai/schemas/server-card.json",
+  "serverInfo": {
+    "name": "rogerferrnandes/rfe-auth-api",
+    "displayName": "RFE Auth & Identity MCP Server",
+    "version": "1.0.0",
+    "description": "OAuth 2.1 authentication, OpenIddict token manager, and PostgreSQL user administration tools."
+  },
+  "authentication": {
+    "required": false
+  },
+  "tools": [
+    {
+      "name": "summarize-openapi-specs",
+      "description": "Summarizes the OpenAPI spec operations for RFE Auth API.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "search-openapi-operations",
+      "description": "Searches OpenAPI endpoints by keyword or tag.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search term"
+          }
+        },
+        "required": [
+          "query"
+        ]
+      }
+    },
+    {
+      "name": "execute-request",
+      "description": "Executes an HTTP API call against RFE Auth backend.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "description": "OpenAPI Operation ID"
+          },
+          "parameters": {
+            "type": "object",
+            "description": "Parameters payload"
+          }
+        },
+        "required": [
+          "operationId"
+        ]
+      }
+    }
+  ]
+}

@@ -11,15 +11,15 @@ startCommand:
       - "-y"
       - "@scalar/mcp-server"
       - "--url"
-      - "https://auth.yourdomain.com/swagger/v1/swagger.json"
+      - "https://rfe-auth-api.onrender.com/swagger/v1/swagger.json"
   env:
     SCALAR_MCP_AUTO_SUMMARY: "true"
 
 metadata:
-  name: "rfe-auth-api"
+  name: "rogerferrnandes/rfe-auth-api"
   displayName: "RFE Auth & Identity MCP Server"
   description: "OAuth 2.1 authentication, OpenIddict token manager, and PostgreSQL user administration tools."
-  icon: "https://auth.yourdomain.com/static/logo.png"
+  icon: "https://rfe-auth-api.onrender.com/static/logo.png"
   repository: "https://github.com/rogthat7/rfe.auth.netcore"
   license: "MIT"
   tags:
