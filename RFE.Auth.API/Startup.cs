@@ -123,8 +123,17 @@ namespace RFE.Auth.API
             PrepDB.PrepPopulation(app);
             //app.UseHttpsRedirection();
 
+            var provider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+            provider.Mappings[".yaml"] = "application/x-yaml";
+            provider.Mappings[".yml"] = "application/x-yaml";
+            provider.Mappings[".json"] = "application/json";
+
             app.UseDefaultFiles();
-            app.UseStaticFiles();
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                ContentTypeProvider = provider,
+                ServeUnknownFileTypes = true
+            });
 
             app.UseRouting();
             app.UseCors("AllowAll");
