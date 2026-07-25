@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -16,12 +17,55 @@ namespace RFE.Auth.API.Controllers
     [AllowAnonymous]
     public class McpController : ControllerBase
     {
-        private static readonly Dictionary<string, HttpResponse> ActiveSessions = new Dictionary<string, HttpResponse>();
+        private readonly IConfiguration _configuration;
+
+        public McpController(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
+        private bool IsApiKeyValid()
+        {
+            var configuredApiKey = _configuration["McpConfig:ApiKey"] ?? Environment.GetEnvironmentVariable("RFE_AUTH_API_KEY");
+            if (string.IsNullOrWhiteSpace(configuredApiKey))
+            {
+                // If no API key is configured on server, request is valid by default
+                return true;
+            }
+
+            if (HttpContext.Request.Headers.TryGetValue("X-API-Key", out var headerApiKey) && headerApiKey == configuredApiKey)
+            {
+                return true;
+            }
+
+            if (HttpContext.Request.Headers.TryGetValue("Authorization", out var authHeader))
+            {
+                var authStr = authHeader.ToString();
+                if (authStr.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase) && authStr.Substring(7).Trim() == configuredApiKey)
+                {
+                    return true;
+                }
+            }
+
+            if (HttpContext.Request.Query.TryGetValue("apiKey", out var queryApiKey) && queryApiKey == configuredApiKey)
+            {
+                return true;
+            }
+
+            return false;
+        }
 
         [HttpGet("sse")]
         [HttpGet("mcp/sse")]
         public async Task GetSse()
         {
+            if (!IsApiKeyValid())
+            {
+                HttpContext.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await HttpContext.Response.WriteAsync("Unauthorized: Invalid or missing X-API-Key header.");
+                return;
+            }
+
             var response = HttpContext.Response;
             response.Headers["Content-Type"] = "text/event-stream";
             response.Headers["Cache-Control"] = "no-cache";
@@ -55,6 +99,16 @@ namespace RFE.Auth.API.Controllers
         [HttpPost("messages")]
         public async Task<IActionResult> HandleJsonRpc()
         {
+            if (!IsApiKeyValid())
+            {
+                return StatusCode(StatusCodes.Status401Unauthorized, new
+                {
+                    jsonrpc = "2.0",
+                    error = new { code = -32001, message = "Unauthorized: Invalid or missing X-API-Key header" },
+                    id = (object)null
+                });
+            }
+
             string body;
             using (var reader = new StreamReader(HttpContext.Request.Body, Encoding.UTF8))
             {

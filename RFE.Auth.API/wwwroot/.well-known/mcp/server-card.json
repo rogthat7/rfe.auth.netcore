@@ -25,7 +25,9 @@
     "iconUrl": "https://rfe-auth-api.onrender.com/static/logo.png"
   },
   "authentication": {
-    "required": false
+    "required": true,
+    "type": "apiKey",
+    "headerName": "X-API-Key"
   },
   "tools": [
     {
