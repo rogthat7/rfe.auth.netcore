@@ -1,10 +1,10 @@
 {
   "$schema": "https://smithery.ai/schemas/server-card.json",
   "name": "rogthat7/rfe-auth-api",
-  "displayName": "RFE Auth & Identity MCP Server",
-  "title": "RFE Auth & Identity MCP Server",
+  "displayName": "rfe-auth-api MCP Server",
+  "title": "rfe-auth-api MCP Server",
   "version": "1.0.0",
-  "description": "Comprehensive OAuth 2.1 identity provider, OpenIddict token server, and PostgreSQL user administration backend.",
+  "description": "ASP.NET Core 10.0 Web API",
   "homepage": "https://github.com/rogthat7/rfe.auth.netcore",
   "homepageUrl": "https://github.com/rogthat7/rfe.auth.netcore",
   "repository": "https://github.com/rogthat7/rfe.auth.netcore",
@@ -13,10 +13,10 @@
   "iconUrl": "https://rfe-auth-api.onrender.com/static/logo.png",
   "serverInfo": {
     "name": "rogthat7/rfe-auth-api",
-    "displayName": "RFE Auth & Identity MCP Server",
-    "title": "RFE Auth & Identity MCP Server",
+    "displayName": "rfe-auth-api MCP Server",
+    "title": "rfe-auth-api MCP Server",
     "version": "1.0.0",
-    "description": "Comprehensive OAuth 2.1 identity provider, OpenIddict token server, and PostgreSQL user administration backend.",
+    "description": "ASP.NET Core 10.0 Web API",
     "homepage": "https://github.com/rogthat7/rfe.auth.netcore",
     "homepageUrl": "https://github.com/rogthat7/rfe.auth.netcore",
     "repository": "https://github.com/rogthat7/rfe.auth.netcore",
@@ -30,9 +30,9 @@
   "tools": [
     {
       "name": "summarize-openapi-specs",
-      "description": "Summarizes all public OpenAPI endpoints and operations for RFE Auth API.",
+      "description": "Summarizes the OpenAPI spec operations for the API.",
       "annotations": {
-        "title": "Summarize OpenAPI Specification",
+        "title": "Summarize OpenAPI Spec",
         "readOnlyHint": true,
         "destructive": false
       },
@@ -44,19 +44,17 @@
         "type": "object",
         "properties": {
           "summary": {
-            "type": "string",
-            "description": "Human-readable summary of API routes and capabilities"
+            "type": "string"
           },
           "operationCount": {
-            "type": "integer",
-            "description": "Total number of available OpenAPI operations"
+            "type": "integer"
           }
         }
       }
     },
     {
       "name": "search-openapi-operations",
-      "description": "Searches OpenAPI endpoints by keyword or controller tag.",
+      "description": "Searches OpenAPI endpoints by keyword.",
       "annotations": {
         "title": "Search Operations",
         "readOnlyHint": true,
@@ -67,7 +65,7 @@
         "properties": {
           "query": {
             "type": "string",
-            "description": "Search keyword or endpoint path"
+            "description": "Search term"
           }
         },
         "required": [
@@ -79,7 +77,6 @@
         "properties": {
           "matches": {
             "type": "array",
-            "description": "List of matching OpenAPI endpoint operations",
             "items": {
               "type": "object"
             }
@@ -89,7 +86,7 @@
     },
     {
       "name": "execute-request",
-      "description": "Executes an HTTP API call against RFE Auth backend endpoints.",
+      "description": "Executes an HTTP API call against the backend.",
       "annotations": {
         "title": "Execute API Request",
         "readOnlyHint": false,
@@ -100,11 +97,7 @@
         "properties": {
           "operationId": {
             "type": "string",
-            "description": "OpenAPI Operation ID to invoke"
-          },
-          "parameters": {
-            "type": "object",
-            "description": "Parameters payload object for path, query, or body"
+            "description": "Operation ID"
           }
         },
         "required": [
@@ -115,12 +108,10 @@
         "type": "object",
         "properties": {
           "statusCode": {
-            "type": "integer",
-            "description": "HTTP response status code"
+            "type": "integer"
           },
           "data": {
-            "type": "object",
-            "description": "Response payload data object"
+            "type": "object"
           }
         }
       }
