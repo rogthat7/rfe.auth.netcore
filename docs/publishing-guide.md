@@ -25,31 +25,21 @@ This guide outlines how to submit, register, and publish the `RFE.Auth.Netcore` 
 ## 2. Claude Desktop & MCP Registries (Smithery & Official Registry)
 
 ### Files Created
-- [`smithery.yaml`](file:///c:/Users/rogth/source/repos/rogthat7/rfe.auth.netcore/smithery.yaml) (Smithery.ai manifest with `configSchema` and `stdio`/`sse` support)
+- [`smithery.yaml`](file:///c:/Users/rogth/source/repos/rogthat7/rfe.auth.netcore/smithery.yaml) (Smithery.ai manifest referencing OpenAPI /swagger/v1/swagger.json)
 - [`mcp-registry.json`](file:///c:/Users/rogth/source/repos/rogthat7/rfe.auth.netcore/mcp-registry.json) (Anthropic Official Registry manifest)
-- [`McpController.cs`](file:///c:/Users/rogth/source/repos/rogthat7/rfe.auth.netcore/RFE.Auth.API/Controllers/McpController.cs) (Native ASP.NET Core SSE & JSON-RPC Controller)
 
-### Transport Options
+### Architecture
+The `rogthat7/rfe-auth-api` server uses the standard **OpenAPI Stdio Proxy** model. Smithery dynamically converts your live OpenAPI spec (`https://rfe-auth-api.onrender.com/swagger/v1/swagger.json`) into MCP tools over stdio/SSE without requiring custom controller code or API key prompts.
 
-#### A. Smithery Cloud SSE Proxy Transport
-Connect directly to the hosted SSE stream:
-* **Transport**: `sse`
-* **URL**: `https://server.smithery.ai/rogthat7/rfe-auth-api/sse`
+### Publishing & Installation
 
-> [!NOTE]
-> Ensure `/sse` is appended to the Smithery server URL when connecting via HTTP/SSE transport to avoid HTTP 405 Method Not Allowed initialization errors.
-
-#### B. Direct ASP.NET Core Native SSE Endpoint
-Connect directly to the live Render deployment:
-* **Transport**: `sse`
-* **URL**: `https://rfe-auth-api.onrender.com/sse` (or `/mcp/sse`)
-
-#### C. Stdio CLI (1-Click Install for Claude / Cursor / Windsurf)
+#### Publish to Smithery.ai
 Run the following command from the root directory:
 ```bash
-npx smithery@latest publish
+npx smithery@latest publish "https://rfe-auth-api.onrender.com" -n "rogthat7/rfe-auth-api"
 ```
-Or install in Claude Desktop / Cursor:
+
+#### Install in Claude Desktop / Cursor / Windsurf
 ```bash
 npx smithery@latest install rogthat7/rfe-auth-api
 ```
