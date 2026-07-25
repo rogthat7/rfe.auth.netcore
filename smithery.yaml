@@ -3,6 +3,9 @@
 
 startCommand:
   type: stdio
+  configSchema:
+    type: object
+    properties: {}
   config:
     command: "npx"
     args:
