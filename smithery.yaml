@@ -5,12 +5,7 @@ startCommand:
   type: stdio
   configSchema:
     type: object
-    required:
-      - apiKey
-    properties:
-      apiKey:
-        type: string
-        description: "API Key for authenticating with RFE Auth MCP Server"
+    properties: {}
   config:
     command: "npx"
     args:
@@ -18,8 +13,6 @@ startCommand:
       - "@zerry_jin/swagger-mcp"
       - "--url"
       - "https://rfe-auth-api.onrender.com/swagger/v1/swagger.json"
-      - "--header"
-      - "X-API-Key: ${config.apiKey}"
 
 metadata:
   name: "rogthat7/rfe-auth-api"
