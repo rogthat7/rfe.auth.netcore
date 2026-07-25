@@ -1,6 +1,9 @@
 # Smithery Manifest for RFE.Auth.Netcore MCP Server
 startCommand:
   type: stdio
+  configSchema:
+    type: object
+    properties: {}
   config:
     command: "npx"
     args:
